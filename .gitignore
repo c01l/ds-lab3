@@ -1,3 +1,7 @@
 .idea/
+
 .project
 .classpath
+build/
+reports/
+out/

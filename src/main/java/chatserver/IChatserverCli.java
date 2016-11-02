@@ -13,7 +13,7 @@ public interface IChatserverCli {
 	 * @return the user information
 	 * @throws IOException
 	 */
-	public String users() throws IOException;
+	String users() throws IOException;
 
 	/**
 	 * Performs a shutdown of the chatserver and releases all resources. <br/>
@@ -23,6 +23,6 @@ public interface IChatserverCli {
 	 * @throws IOException
 	 *             if an I/O error occurs
 	 */
-	public String exit() throws IOException;
+	String exit() throws IOException;
 
 }
