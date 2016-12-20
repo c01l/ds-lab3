@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import chatserver.Chatserver.Marker;
 
@@ -17,9 +18,10 @@ import chatserver.Chatserver.Marker;
 public class ChatserverClientHandler extends SilentShell implements IServerClientHandler {
 
     private static final Logger LOGGER = Logger.getLogger("CharserverClientHandler");
+    static { LOGGER.setLevel(Level.WARNING); }
 
     private static final String MSG_RESPONSE_LOGIN_SUCCESSFUL = "Successfully logged in.";
-    private static final String MSG_RESPONSE_LOGIN_FAILED = "The supplied login credentials are incorrect!";
+    private static final String MSG_RESPONSE_LOGIN_FAILED = "Wrong username or password!";
     private static final String MSG_RESPONSE_LOGIN_ALREADYLOGGEDIN = "You are already logged in!";
 
     private static final String MSG_RESPONSE_LOGOUT_SUCCESSFUL = "Successfully logged out";

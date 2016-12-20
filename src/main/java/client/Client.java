@@ -64,7 +64,7 @@ public class Client implements IClientCli, Runnable {
 
         this.pool = Executors.newFixedThreadPool(4);
         this.logger = Logger.getLogger(componentName);
-        this.logger.setLevel(Level.ALL);
+        this.logger.setLevel(Level.WARNING);
     }
 
     @Override
@@ -136,7 +136,7 @@ public class Client implements IClientCli, Runnable {
     @Override
     public String login(String username, String password) throws IOException {
         if (this.loggedIn) {
-            return "You are already loggedin!";
+            return "You are already logged in!";
         }
 
         if (username.contains(" ") || password.contains(" ")) {

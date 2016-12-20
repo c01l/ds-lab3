@@ -1,0 +1,20 @@
+*	Chatserver	chatserver
+*	Client		alice.vienna.at
+
+alice.vienna.at:	!login alice.vienna.at 12345
+>					verify("success")
+
+chatserver:			!users
+>					verify(".*alice.*online.*bill.*offline.*", T(test.util.Flag).REGEX)
+
+alice.vienna.at:	!logout
+>					verify(".*Successfully logged out.*", T(test.util.Flag).REGEX)
+
+chatserver:			!users
+>					verify(".*alice.*offline.*bill.*offline.*", T(test.util.Flag).REGEX)
+
+alice.vienna.at:	!logout
+>					verify(".*Not logged in.*", T(test.util.Flag).REGEX)
+
+chatserver: 		!exit
+alice.vienna.at:	!exit

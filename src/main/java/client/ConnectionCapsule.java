@@ -14,10 +14,10 @@ import java.util.logging.Logger;
 public class ConnectionCapsule implements Closeable {
     private static final Logger LOGGER = Logger.getLogger("ConnectionCapsule");
     static {
-        LOGGER.setLevel(Level.ALL);
-        ConsoleHandler cH = new ConsoleHandler();
-        cH.setLevel(Level.ALL);
-        LOGGER.addHandler(cH);
+        LOGGER.setLevel(Level.WARNING);
+        //ConsoleHandler cH = new ConsoleHandler();
+        //cH.setLevel(Level.ALL);
+        //LOGGER.addHandler(cH);
     }
 
     private Socket socket;

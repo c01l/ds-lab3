@@ -44,6 +44,7 @@ public class Chatserver implements IChatserverCli, Runnable {
         this.userResponseStream = userResponseStream;
 
         logger = Logger.getLogger(this.componentName);
+	logger.setLevel(Level.WARNING);
 
         this.userData = new ArrayList<>();
         fillUserData(this.userData, new Config("user"));
@@ -159,6 +160,8 @@ public class Chatserver implements IChatserverCli, Runnable {
 
         public UDPServerThread(int port) {
             this.port = port;
+
+	    this.LOGGER.setLevel(Level.WARNING);
         }
 
         @Override

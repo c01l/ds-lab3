@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 public class AsynchronousTCPServer extends Thread {
 
     private static final Logger LOGGER = Logger.getLogger("AsynchronousTCPServer");
+    static { LOGGER.setLevel(Level.WARNING); }    
 
     private final int port;
     private ServerSocket socket;

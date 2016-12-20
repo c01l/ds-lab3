@@ -1,0 +1,14 @@
+*	Chatserver	chatserver
+*	Client		alice.vienna.at
+
+alice.vienna.at:    !login bob.de 12345
+>                   verify("Wrong username or password")
+
+alice.vienna.at:	!login alice.vienna.at 12345
+>					verify("success")
+
+alice.vienna.at:    !login alice.vienna.at 12345
+>                   verify("Already logged in")
+
+chatserver: 		!exit
+alice.vienna.at:	!exit
