@@ -1,12 +1,12 @@
 package chatserver;
 
-import java.net.Socket;
+import util.CommunicationChannel;
 
 /**
  * Created by ROLAND on 20.10.2016.
  */
 public class UserData {
-    private Socket client;
+    private CommunicationChannel client;
 
     private boolean onlineStatus;
 
@@ -21,11 +21,11 @@ public class UserData {
         this.localAddress = null;
     }
 
-    public Socket getClient() {
+    public CommunicationChannel getClient() {
         return client;
     }
 
-    public void setClient(Socket client) {
+    public void setClient(CommunicationChannel client) {
         this.client = client;
     }
 

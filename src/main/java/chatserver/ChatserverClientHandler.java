@@ -5,16 +5,13 @@ import cli.SilentShell;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.Socket;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
 import chatserver.Chatserver.Marker;
+import util.CommunicationChannel;
 
-/**
- * Created by ROLAND on 28.10.2016.
- */
 public class ChatserverClientHandler extends SilentShell implements IServerClientHandler {
 
     private static final Logger LOGGER = Logger.getLogger("CharserverClientHandler");
@@ -38,12 +35,12 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     private static final String MSG_UNKNOWN_COMMAND = "Unknown command!";
     private static final String MSG_RESPONSE_NOTLOGGEDIN = "Not logged in.";
 
-    private Socket socket;
+    private CommunicationChannel channel;
     private final List<UserData> userDB;
 
-    public ChatserverClientHandler(String name, Socket socket, List<UserData> userDB) throws IOException {
-        super(name, socket.getInputStream(), socket.getOutputStream());
-        this.socket = socket;
+    public ChatserverClientHandler(String name, CommunicationChannel channel, List<UserData> userDB) throws IOException {
+        super(name, channel.getInputStream(), channel.getOutputStream());
+        this.channel = channel;
         this.userDB = userDB;
 
         this.register(this);
@@ -65,7 +62,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
                         }
 
                         d.setOnlineStatus(true);
-                        d.setClient(this.socket);
+                        d.setClient(this.channel);
                     }
                     LOGGER.info("User '" + username + "' logged in!");
                     return Chatserver.Marker.MARKER_LOGIN_RESPONSE + MSG_RESPONSE_LOGIN_SUCCESSFUL;
@@ -83,9 +80,9 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Command("!logout")
     @Override
     public String logout() {
-        UserData own = findUserData(this.socket);
+        UserData own = findUserData(this.channel);
         if (own == null) {
-            LOGGER.warning("Cannot find UserData object for current socket!");
+            LOGGER.warning("Cannot find UserData object for current channel!");
             return Chatserver.Marker.MARKER_LOGOUT_RESPONSE + MSG_RESPONSE_LOGOUT_FAILED;
         }
 
@@ -115,7 +112,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Command("!send")
     @Override
     public String send(String message) {
-        UserData own = findUserData(this.socket);
+        UserData own = findUserData(this.channel);
         if (own == null || !own.isOnline()) {
             return Chatserver.Marker.MARKER_SEND_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
@@ -125,14 +122,14 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
         // send to other clients
         synchronized (this.userDB) {
             for (UserData d : this.userDB) {
-                if (d.getClient() != this.socket && d.getClient() != null) {
+                if (d.getClient() != this.channel && d.getClient() != null) {
                     synchronized (d) {
                         try {
                             OutputStream os = d.getClient().getOutputStream();
                             os.write(("!show" + message + "\n").getBytes());
                             os.flush();
                         } catch (IOException e) {
-                            LOGGER.warning("Failed to send message to " + d.getName() + " (socket: " + d.getClient() + ")");
+                            LOGGER.warning("Failed to send message to " + d.getName() + " (channel: " + d.getClient() + ")");
                         }
                     }
                 }
@@ -145,7 +142,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Command("!register")
     @Override
     public String register(String ipPort) {
-        UserData d = findUserData(this.socket);
+        UserData d = findUserData(this.channel);
         if (d == null || !d.isOnline()) {
             return Chatserver.Marker.MARKER_REGISTER_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
@@ -160,7 +157,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Command("!lookup")
     @Override
     public String lookup(String username) {
-        UserData own = findUserData(this.socket);
+        UserData own = findUserData(this.channel);
         if(own==null || !own.isOnline()) {
             return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
@@ -181,7 +178,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
         return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_LOOKUP_FAILED;
     }
 
-    private UserData findUserData(Socket socket) {
+    private UserData findUserData(CommunicationChannel socket) {
         synchronized (this.userDB) {
             for (UserData d : this.userDB) {
                 if (d.getClient() == socket) {
@@ -197,9 +194,9 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
         super.close();
 
         try {
-            this.socket.close();
+            this.channel.close();
         } catch (IOException e) {
-            LOGGER.warning("Failed to close socket!");
+            LOGGER.warning("Failed to close channel!");
             e.printStackTrace();
         }
     }

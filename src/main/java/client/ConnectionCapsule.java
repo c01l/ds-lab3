@@ -1,6 +1,8 @@
 package client;
 
+import util.CommunicationChannel;
 import util.LineStreamSplitter;
+import util.SimpleSocketCommunicationChannel;
 
 import java.io.*;
 import java.net.Socket;
@@ -15,20 +17,19 @@ public class ConnectionCapsule implements Closeable {
     private static final Logger LOGGER = Logger.getLogger("ConnectionCapsule");
     static {
         LOGGER.setLevel(Level.WARNING);
-        //ConsoleHandler cH = new ConsoleHandler();
-        //cH.setLevel(Level.ALL);
-        //LOGGER.addHandler(cH);
     }
 
     private Socket socket;
+    private CommunicationChannel channel;
     private BufferedReader in;
     private PrintWriter out;
     private LineStreamSplitter splitter;
 
     public ConnectionCapsule(String hostname, int port) throws IOException {
         this.socket = new Socket(hostname, port);
-        this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
-        this.out = new PrintWriter(this.socket.getOutputStream());
+        this.channel = new SimpleSocketCommunicationChannel(this.socket);
+        this.in = new BufferedReader(new InputStreamReader(this.channel.getInputStream()));
+        this.out = new PrintWriter(this.channel.getOutputStream());
         this.splitter = new LineStreamSplitter(this.in);
     }
 
@@ -64,9 +65,14 @@ public class ConnectionCapsule implements Closeable {
             e.printStackTrace();
         }
 
-        LOGGER.fine("Closing output...");
-        this.out.close();
-        LOGGER.fine("Output closed!");
+        try {
+            LOGGER.fine("Closing output...");
+            this.channel.close();
+            LOGGER.fine("Output closed!");
+        }catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Failed to close socket!");
+            e.printStackTrace();
+        }
 
         try {
             LOGGER.fine("Closing socket...");

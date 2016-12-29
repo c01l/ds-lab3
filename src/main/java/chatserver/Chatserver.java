@@ -10,7 +10,9 @@ import java.util.logging.Logger;
 
 import cli.Command;
 import cli.Shell;
+import util.CommunicationChannel;
 import util.Config;
+import util.SimpleSocketCommunicationChannel;
 
 public class Chatserver implements IChatserverCli, Runnable {
 
@@ -44,7 +46,7 @@ public class Chatserver implements IChatserverCli, Runnable {
         this.userResponseStream = userResponseStream;
 
         logger = Logger.getLogger(this.componentName);
-	logger.setLevel(Level.WARNING);
+	    logger.setLevel(Level.WARNING);
 
         this.userData = new ArrayList<>();
         fillUserData(this.userData, new Config("user"));
@@ -116,7 +118,7 @@ public class Chatserver implements IChatserverCli, Runnable {
         // logout users
         synchronized (this.userData) {
             for (UserData data : this.userData) {
-                Socket s = data.getClient();
+                CommunicationChannel s = data.getClient();
                 if (s != null) {
                     s.close();
                 }
@@ -137,7 +139,7 @@ public class Chatserver implements IChatserverCli, Runnable {
     private class ChatserverClientHandlerFactory implements ClientHandlerFactory {
         @Override
         public Runnable createClientHandler(Socket client) throws IOException {
-            return new ChatserverClientHandler(componentName, client, userData);
+            return new ChatserverClientHandler(componentName, new SimpleSocketCommunicationChannel(client), userData);
         }
     }
 
