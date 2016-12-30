@@ -1,4 +1,4 @@
-package util;
+package util.crypto;
 
 /**
  * This exception is thrown in case a transmitted message is broken.
