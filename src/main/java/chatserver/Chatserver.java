@@ -12,6 +12,7 @@ import cli.Command;
 import cli.Shell;
 import util.CommunicationChannel;
 import util.Config;
+import util.Keys;
 import util.SimpleSocketCommunicationChannel;
 
 public class Chatserver implements IChatserverCli, Runnable {
@@ -46,7 +47,7 @@ public class Chatserver implements IChatserverCli, Runnable {
         this.userResponseStream = userResponseStream;
 
         logger = Logger.getLogger(this.componentName);
-	    logger.setLevel(Level.WARNING);
+        //logger.setLevel(Level.WARNING);
 
         this.userData = new ArrayList<>();
         fillUserData(this.userData, new Config("user"));
@@ -73,9 +74,27 @@ public class Chatserver implements IChatserverCli, Runnable {
                 String name = key.substring(0, loc);
                 String password = config.getString(key);
 
-                list.add(new UserData(name, password));
+                // load public key
+                File keyFile = getPublicKeyFileForUser(name);
+                if (keyFile == null) {
+                    logger.warning("Cannot find key file for user '" + name + "'!");
+                    continue;
+                }
+                try {
+                    list.add(new UserData(name, password, Keys.readPublicPEM(keyFile)));
+                    logger.info("Successfully loaded key for '" + name + "'!");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
+    }
+
+    private File getPublicKeyFileForUser(String username) {
+        File f = new File("keys/chatserver/" + username + ".pub.pem");
+        if (!f.exists())
+            return null;
+        return f;
     }
 
     @Override
@@ -163,7 +182,7 @@ public class Chatserver implements IChatserverCli, Runnable {
         public UDPServerThread(int port) {
             this.port = port;
 
-	    this.LOGGER.setLevel(Level.WARNING);
+            this.LOGGER.setLevel(Level.WARNING);
         }
 
         @Override
@@ -223,7 +242,7 @@ public class Chatserver implements IChatserverCli, Runnable {
                             System.arraycopy(toSend, pos, buffer, 0, Math.min((UDPSIZE - 1), toSend.length - pos));
 
                             // add another packet will follow flag to the package if needed
-                            if(pos + UDPSIZE - 1 < builder.length()) {
+                            if (pos + UDPSIZE - 1 < builder.length()) {
                                 buffer[UDPSIZE - 1] = 31; // Unit Seperator
                             }
 
