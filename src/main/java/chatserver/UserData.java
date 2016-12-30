@@ -2,23 +2,25 @@ package chatserver;
 
 import util.CommunicationChannel;
 
-/**
- * Created by ROLAND on 20.10.2016.
- */
+import java.security.Key;
+
 public class UserData {
     private CommunicationChannel client;
+
+    private Key publicKey;
 
     private boolean onlineStatus;
 
     private String name, password;
     private String localAddress;
 
-    public UserData(String name, String password) {
+    public UserData(String name, String password, Key publicKey) {
         this.name = name;
         this.setPassword(password);
         this.onlineStatus = false;
         this.client = null;
         this.localAddress = null;
+        this.publicKey = publicKey;
     }
 
     public CommunicationChannel getClient() {
@@ -59,5 +61,9 @@ public class UserData {
 
     public void setLocalAddress(String localAddress) {
         this.localAddress = localAddress;
+    }
+
+    public Key getPublicKey() {
+        return publicKey;
     }
 }

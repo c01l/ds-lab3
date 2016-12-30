@@ -22,7 +22,7 @@ public class RSAMessageCryptor implements MessageCryptor {
 
     private static final Logger logger = Logger.getLogger("RSAMessageCryptor");
 
-    private Cipher cipher;
+    private final Cipher cipher;
     private Key encryptionKey, decryptionKey;
 
     public RSAMessageCryptor(Key encryptionKey, Key decryptionKey) {
@@ -71,5 +71,13 @@ public class RSAMessageCryptor implements MessageCryptor {
         }catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
             throw new BrokenMessageException(e);
         }
+    }
+
+    public void setEncryptionKey(Key encryptionKey) {
+        this.encryptionKey = encryptionKey;
+    }
+
+    public void setDecryptionKey(Key decryptionKey) {
+        this.decryptionKey = decryptionKey;
     }
 }
