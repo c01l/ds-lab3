@@ -29,6 +29,8 @@ public class ServerHandshakePerformer implements HandshakePerformer {
     private Key serverPrivateKey;
     private List<UserData> userDataList;
 
+    private UserData lastLoggedIn = null;
+
     public ServerHandshakePerformer(Key serverPrivateKey, List<UserData> userDataList) {
         this.serverPrivateKey = serverPrivateKey;
         this.userDataList = userDataList;
@@ -48,6 +50,10 @@ public class ServerHandshakePerformer implements HandshakePerformer {
             String msg1 = reader.readLine();
 
             logger.info("Client sent (message 1): " + msg1);
+
+            if(msg1 == null) {
+                throw new HandshakeFailedException("Client sent empty message");
+            }
 
             // split and check message integrity
             String[] msg1Split = msg1.split(" ");
@@ -117,12 +123,18 @@ public class ServerHandshakePerformer implements HandshakePerformer {
 
             logger.info("Finished handshake!");
 
+            this.lastLoggedIn = user;
+
             return aesChannel;
         } catch (InvalidKeyException | IOException e) {
             throw new HandshakeFailedException(e);
         } catch (NoSuchAlgorithmException e) {
             throw new AssertionError(e);
         }
+    }
+
+    public UserData getLastLoggedIn() {
+        return lastLoggedIn;
     }
 
     private UserData findUserByName(String name) {

@@ -40,6 +40,7 @@ public class CryptoChannel implements CommunicationChannel, Decorated<Communicat
                         pos = 0;
                     } catch (BrokenMessageException e) {
                         logger.warning(e.getMessage()); // TODO check handling
+                        return -1;
                     }
                 }
 

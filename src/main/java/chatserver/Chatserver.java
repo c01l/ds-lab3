@@ -4,10 +4,13 @@ import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Socket;
+import java.security.Key;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import chatserver.stage.LoginStage;
+import chatserver.stage.PerformingStage;
 import cli.Command;
 import cli.Shell;
 import util.CommunicationChannel;
@@ -32,6 +35,8 @@ public class Chatserver implements IChatserverCli, Runnable {
     private UDPServerThread udpServer;
     private AsynchronousTCPServer tcpServer;
     private Shell shell;
+
+    private Key serverPrivateKey;
 
     /**
      * @param componentName      the name of the component - represented in the prompt
@@ -62,6 +67,14 @@ public class Chatserver implements IChatserverCli, Runnable {
                 return o1.getName().compareTo(o2.getName());
             }
         });
+
+        // load server key
+        try {
+            this.serverPrivateKey = Keys.readPrivatePEM(new File("keys/chatserver/chatserver.pem"));
+        } catch (IOException e){
+            logger.warning("Failed to load server private key!");
+            e.printStackTrace();
+        }
     }
 
     private void fillUserData(List<UserData> list, Config config) {
@@ -158,7 +171,47 @@ public class Chatserver implements IChatserverCli, Runnable {
     private class ChatserverClientHandlerFactory implements ClientHandlerFactory {
         @Override
         public Runnable createClientHandler(Socket client) throws IOException {
-            return new ChatserverClientHandler(componentName, new SimpleSocketCommunicationChannel(client), userData);
+            final CommunicationChannel channel = new SimpleSocketCommunicationChannel(client);
+            return new Runnable() {
+                @Override
+                public void run() {
+                    UserData d;
+                    try {
+                        LoginStage loginStage = new LoginStage(serverPrivateKey, userData);
+                        d = loginStage.execute(null, channel);
+                    } catch (TerminateSessionException e) {
+                        logger.warning("Exception occured while logging in, terminating session!");
+                        try {
+                            channel.close();
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
+                        return;
+                    }
+
+                    logger.info("Successfully logged in user: " + d.getName());
+
+                    try {
+                        PerformingStage performingStage = new PerformingStage(userData);
+                        d = performingStage.execute(d, d.getClient());
+                    } catch (TerminateSessionException e) {
+                        logger.warning("Exception occured while performing, terminating session!");
+                        try {
+                            channel.close();
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
+                        return;
+                    }
+
+                    // client shell exited -> closing connection
+                    try {
+                        channel.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
         }
     }
 
