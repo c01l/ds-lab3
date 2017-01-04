@@ -37,6 +37,7 @@ public class Chatserver implements IChatserverCli, Runnable {
     private Shell shell;
 
     private Key serverPrivateKey;
+    private String clientKeyDir;
 
     /**
      * @param componentName      the name of the component - represented in the prompt
@@ -67,14 +68,6 @@ public class Chatserver implements IChatserverCli, Runnable {
                 return o1.getName().compareTo(o2.getName());
             }
         });
-
-        // load server key
-        try {
-            this.serverPrivateKey = Keys.readPrivatePEM(new File("keys/chatserver/chatserver.pem"));
-        } catch (IOException e) {
-            logger.warning("Failed to load server private key!");
-            e.printStackTrace();
-        }
     }
 
     private void fillUserData(List<UserData> list, Config config) {
@@ -87,31 +80,25 @@ public class Chatserver implements IChatserverCli, Runnable {
                 String name = key.substring(0, loc);
                 String password = config.getString(key);
 
-                // load public key
-                File keyFile = getPublicKeyFileForUser(name);
-                if (keyFile == null) {
-                    logger.warning("Cannot find key file for user '" + name + "'!");
-                    continue;
-                }
-                try {
-                    list.add(new UserData(name, password, Keys.readPublicPEM(keyFile)));
-                    logger.info("Successfully loaded key for '" + name + "'!");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+
+                list.add(new UserData(name, password, null));
+                logger.info("Successfully added user '" + name + "'!");
             }
         }
     }
 
-    private File getPublicKeyFileForUser(String username) {
-        File f = new File("keys/chatserver/" + username + ".pub.pem");
-        if (!f.exists())
-            return null;
-        return f;
-    }
-
     @Override
     public void run() {
+        // load server key
+        try {
+            this.serverPrivateKey = Keys.readPrivatePEM(new File(this.config.getString("key")));
+        } catch (IOException e) {
+            logger.warning("Failed to load server private key!");
+            e.printStackTrace();
+        }
+
+        this.clientKeyDir = this.config.getString("keys.dir");
+
         // setup TCP Server (requests are handled by ChatserverClientHandlerFactory)
         tcpServer = new AsynchronousTCPServer(this.config.getInt("tcp.port"), new ChatserverClientHandlerFactory());
         tcpServer.start();
@@ -177,7 +164,7 @@ public class Chatserver implements IChatserverCli, Runnable {
                 public void run() {
                     UserData d;
                     try {
-                        LoginStage loginStage = new LoginStage(serverPrivateKey, userData);
+                        LoginStage loginStage = new LoginStage(serverPrivateKey, userData, clientKeyDir);
                         d = loginStage.execute(null, channel);
                     } catch (TerminateSessionException e) {
                         logger.warning("Exception occured while logging in, terminating session!");

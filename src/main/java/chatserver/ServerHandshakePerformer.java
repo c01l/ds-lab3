@@ -1,20 +1,14 @@
 package chatserver;
 
 import org.bouncycastle.util.encoders.Base64;
-import util.CommunicationChannel;
-import util.HandshakeFailedException;
-import util.HandshakePerformer;
-import util.LineReader;
+import util.*;
 import util.crypto.CryptoChannel;
 import util.crypto.cryptors.AESMessageCryptor;
 import util.crypto.cryptors.RSAMessageCryptor;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
@@ -29,12 +23,14 @@ public class ServerHandshakePerformer implements HandshakePerformer {
 
     private Key serverPrivateKey;
     private List<UserData> userDataList;
+    private String clientKeyDir;
 
     private UserData lastLoggedIn = null;
 
-    public ServerHandshakePerformer(Key serverPrivateKey, List<UserData> userDataList) {
+    public ServerHandshakePerformer(Key serverPrivateKey, List<UserData> userDataList, String clientKeyDir) {
         this.serverPrivateKey = serverPrivateKey;
         this.userDataList = userDataList;
+        this.clientKeyDir = clientKeyDir;
     }
 
     @Override
@@ -80,7 +76,14 @@ public class ServerHandshakePerformer implements HandshakePerformer {
             }
 
             // use users public key to respond
-            rsaCryptor.setEncryptionKey(user.getPublicKey());
+            File keyFile = getPublicKeyFileForUser(username);
+            if(keyFile == null) {
+                logger.info("Cannot find user public key!");
+                throw new HandshakeFailedException("Cannot find user public key");
+            }
+            Key clientPubKey = Keys.readPublicPEM(keyFile);
+            rsaCryptor.setEncryptionKey(clientPubKey);
+
 
             logger.info("Prepare for sending message 2");
 
@@ -152,5 +155,12 @@ public class ServerHandshakePerformer implements HandshakePerformer {
             }
         }
         return null;
+    }
+
+    private File getPublicKeyFileForUser(String username) {
+        File f = new File(this.clientKeyDir + "/" + username + ".pub.pem");
+        if (!f.exists())
+            return null;
+        return f;
     }
 }

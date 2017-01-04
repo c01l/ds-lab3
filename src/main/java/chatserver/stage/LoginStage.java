@@ -14,10 +14,12 @@ public class LoginStage implements ClientStage {
 
     private Key serverPrivateKey;
     private List<UserData> userDB;
+    private String clientKeyDir;
 
-    public LoginStage(Key serverPrivateKey, List<UserData> userDB) {
+    public LoginStage(Key serverPrivateKey, List<UserData> userDB, String clientKeyDir) {
         this.serverPrivateKey = serverPrivateKey;
         this.userDB = userDB;
+        this.clientKeyDir = clientKeyDir;
     }
 
     @Override
@@ -27,7 +29,7 @@ public class LoginStage implements ClientStage {
             throw new AssertionError("The user should never be logged in in this stage!");
         }
 
-        ServerHandshakePerformer handshake = new ServerHandshakePerformer(this.serverPrivateKey, this.userDB);
+        ServerHandshakePerformer handshake = new ServerHandshakePerformer(this.serverPrivateKey, this.userDB, clientKeyDir);
 
         try {
             CommunicationChannel secureChannel = handshake.execute(channel);
