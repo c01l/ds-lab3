@@ -29,19 +29,21 @@ public class LoginStage implements Stage {
     private int port;
 
     private Key serverKey;
+    private String clientKeyDir;
 
     private StageGenerator generator;
     private Shell shell;
     private CommunicationChannel loggedInChannel = null;
     private String loggedInUser = null;
 
-    public LoginStage(StageGenerator generator, InputStream userInputStream, OutputStream userOutputStream, String host, int port, Key serverKey) {
+    public LoginStage(StageGenerator generator, InputStream userInputStream, OutputStream userOutputStream, String host, int port, Key serverKey, String clientKeyDir) {
         this.userInputStream = userInputStream;
         this.userOutputStream = userOutputStream;
         this.host = host;
         this.port = port;
         this.serverKey = serverKey;
         this.generator = generator;
+        this.clientKeyDir = clientKeyDir;
     }
 
     @Override
@@ -91,7 +93,7 @@ public class LoginStage implements Stage {
             Key clientKey;
             try {
                 // load private key
-                clientKey = Keys.readPrivatePEM(new File("keys/client/" + username + ".pem"));
+                clientKey = Keys.readPrivatePEM(new File(clientKeyDir + "/" + username + ".pem"));
             } catch (IOException e) {
                 logger.warning("failed to retrieve key for client");
                 return "Failed to read private key!";

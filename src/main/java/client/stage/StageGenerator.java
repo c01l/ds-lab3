@@ -18,18 +18,20 @@ public class StageGenerator {
     private int udpPort;
 
     private Key serverKey;
+    private String clientKeyDir;
 
-    public StageGenerator(InputStream userInputStream, OutputStream userOutputStream, String host, int tcpPort, int udpPort, Key serverKey) {
+    public StageGenerator(InputStream userInputStream, OutputStream userOutputStream, String host, int tcpPort, int udpPort, Key serverKey, String clientKeyDir) {
         this.userInputStream = userInputStream;
         this.userOutputStream = userOutputStream;
         this.host = host;
         this.tcpPort = tcpPort;
         this.serverKey = serverKey;
         this.udpPort = udpPort;
+        this.clientKeyDir = clientKeyDir;
     }
 
     public LoginStage generateLoginStage() {
-        return new LoginStage(this, this.userInputStream, this.userOutputStream, this.host, this.tcpPort, this.serverKey);
+        return new LoginStage(this, this.userInputStream, this.userOutputStream, this.host, this.tcpPort, this.serverKey, this.clientKeyDir);
     }
 
     public PerformingStage generatePerformingStage(CommunicationChannel channel, String username) {

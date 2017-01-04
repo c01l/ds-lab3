@@ -58,15 +58,16 @@ public class Client implements Runnable {
 
         Key serverKey;
         try {
-            serverKey = Keys.readPublicPEM(new File("keys/client/chatserver.pub.pem"));
+            serverKey = Keys.readPublicPEM(new File(this.config.getString("chatserver.key")));
         } catch (IOException e) {
             logger.warning("Failed to load server public key!");
             return;
         }
 
         int serverUdpPort = this.config.getInt("chatserver.udp.port");
+        String clientKeyDir = this.config.getString("keys.dir");
 
-        StageGenerator generator = new StageGenerator(this.userRequestStream, this.userResponseStream, serverHostname, serverPort, serverUdpPort, serverKey);
+        StageGenerator generator = new StageGenerator(this.userRequestStream, this.userResponseStream, serverHostname, serverPort, serverUdpPort, serverKey, clientKeyDir);
 
         Stage stage = generator.generateLoginStage();
         while(stage != null) {
