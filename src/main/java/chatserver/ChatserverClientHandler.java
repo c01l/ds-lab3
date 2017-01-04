@@ -53,6 +53,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Override
     @Deprecated
     public String login(String username, String password) {
+        System.out.println("Client did something funny");
         throw new UnsupportedOperationException("Login is replaced by authenticate");
         /*
         // search for user in the user database

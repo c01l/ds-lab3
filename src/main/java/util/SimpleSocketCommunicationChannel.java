@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.logging.Logger;
 
 
 public class SimpleSocketCommunicationChannel implements CommunicationChannel {
+    private static final Logger logger = Logger.getLogger("SimpleSocketCommunicationChannel");
 
     private Socket socket;
 
@@ -26,6 +28,7 @@ public class SimpleSocketCommunicationChannel implements CommunicationChannel {
 
     @Override
     public void close() throws IOException {
+        logger.info("Closing socket! (socket: " + this.socket +")");
         this.socket.close();
     }
 }

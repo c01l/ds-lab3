@@ -4,6 +4,7 @@ import org.bouncycastle.util.encoders.Base64;
 import util.CommunicationChannel;
 import util.HandshakeFailedException;
 import util.HandshakePerformer;
+import util.LineReader;
 import util.crypto.CryptoChannel;
 import util.crypto.cryptors.AESMessageCryptor;
 import util.crypto.cryptors.RSAMessageCryptor;
@@ -41,14 +42,14 @@ public class ClientHandshakePerformer implements HandshakePerformer {
         String msg1 = "!authenticate " + this.username + " " + encodedClientChallenge + "\n";
         logger.info("Message 1: " + msg1);
         try {
-            CommunicationChannel rsaChannel = new CryptoChannel(start, new RSAMessageCryptor(clientPrivateKey, serverPublicKey));
+            CommunicationChannel rsaChannel = new CryptoChannel(start, new RSAMessageCryptor(serverPublicKey, clientPrivateKey));
 
             OutputStreamWriter msg1Writer = new OutputStreamWriter(rsaChannel.getOutputStream());
             msg1Writer.write(msg1);
             msg1Writer.flush();
 
             // Message 2
-            BufferedReader reader = new BufferedReader(new InputStreamReader(rsaChannel.getInputStream()));
+            LineReader reader = new LineReader(rsaChannel.getInputStream());
             logger.info("Waiting for server response...");
             String msg2 = reader.readLine();
 

@@ -4,6 +4,7 @@ import org.bouncycastle.util.encoders.Base64;
 import util.CommunicationChannel;
 import util.HandshakeFailedException;
 import util.HandshakePerformer;
+import util.LineReader;
 import util.crypto.CryptoChannel;
 import util.crypto.cryptors.AESMessageCryptor;
 import util.crypto.cryptors.RSAMessageCryptor;
@@ -38,6 +39,7 @@ public class ServerHandshakePerformer implements HandshakePerformer {
 
     @Override
     public CommunicationChannel execute(CommunicationChannel start) throws HandshakeFailedException {
+        logger.info("Starting handshake on: " + start.toString());
 
         try {
             // Message 1
@@ -46,9 +48,11 @@ public class ServerHandshakePerformer implements HandshakePerformer {
             CommunicationChannel rsaChannel = new CryptoChannel(start, rsaCryptor);
 
             // recieve
-            BufferedReader reader = new BufferedReader(new InputStreamReader(rsaChannel.getInputStream()));
-            String msg1 = reader.readLine();
+            // BufferedReader reader = new BufferedReader(new InputStreamReader(rsaChannel.getInputStream()));
+            LineReader reader = new LineReader(rsaChannel.getInputStream());
 
+            logger.info("Waiting for message 1 ...");
+            String msg1 = reader.readLine();
             logger.info("Client sent (message 1): " + msg1);
 
             if(msg1 == null) {
@@ -115,7 +119,7 @@ public class ServerHandshakePerformer implements HandshakePerformer {
             logger.info("Waiting for message 3...");
 
             // read server challenge from the new channel
-            BufferedReader aesReader = new BufferedReader(new InputStreamReader(aesChannel.getInputStream()));
+            LineReader aesReader = new LineReader(aesChannel.getInputStream());
             String serverChallengeResponse = aesReader.readLine();
             if(serverChallengeResponse == null || !serverChallengeEncodedB64.equals(serverChallengeResponse)) {
                 throw new HandshakeFailedException("Server Challenge was not returned correctly. (Got: " + serverChallengeResponse + ")");

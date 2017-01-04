@@ -27,25 +27,37 @@ public class CryptoChannel implements CommunicationChannel, Decorated<Communicat
     @Override
     public InputStream getInputStream() throws IOException {
         final BufferedReader stream = new BufferedReader(new InputStreamReader(this.parent.getInputStream()));
-        return new InputStream() {
 
+        return new InputStream() {
             String outbuffer = "";
-            int pos;
+            int pos = 0;
 
             @Override
             public int read() throws IOException {
-                if (outbuffer.isEmpty()) {
+                if (outbuffer.isEmpty() || pos >= outbuffer.length()) {
                     try {
-                        outbuffer = cryptor.decrypt(stream.readLine());
+                        logger.info("Blocking...");
+                        String line = stream.readLine();
+
+                        if(line == null) {
+                            return -1; // stream is dead!
+                        }
+
+                        outbuffer = cryptor.decrypt(line);
+                        outbuffer += "\n";
                         pos = 0;
                     } catch (BrokenMessageException e) {
                         logger.warning(e.getMessage()); // TODO check handling
+                        e.printStackTrace();
                         return -1;
                     }
                 }
 
-                return outbuffer.charAt(pos++);
+                char c = outbuffer.charAt(pos++);
+                logger.info("Returning: " + (int) c);
+                return c;
             }
+
         };
     }
 
@@ -57,15 +69,18 @@ public class CryptoChannel implements CommunicationChannel, Decorated<Communicat
             @Override
             public void write(int b) throws IOException {
                 // read until \n
-                if (b == 13) {
+                if (b == '\n') {
                     try {
-                        parent.getOutputStream().write(cryptor.encrypt(sb.toString() + "\n").getBytes());
+                        BufferedWriter bWriter = new BufferedWriter(new OutputStreamWriter(parent.getOutputStream()));
+                        bWriter.write(cryptor.encrypt(sb.toString()) + "\n");
+                        bWriter.flush();
                         sb = new StringBuilder();
                     } catch (BrokenMessageException e) {
                         logger.warning(e.getMessage()); // TODO check it
                     }
                 } else {
                     sb.append((char) b);
+                    //logger.info("Write: " + (char) b);
                 }
             }
         };

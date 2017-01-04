@@ -1,5 +1,6 @@
 package util.crypto.cryptors;
 
+import org.bouncycastle.util.encoders.Base64;
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 import util.crypto.BrokenMessageException;
@@ -39,12 +40,13 @@ public class RSAMessageCryptor implements MessageCryptor {
 
     @Override
     public String encrypt(String msg) throws BrokenMessageException {
-        BASE64Encoder encoder = new BASE64Encoder();
+        logger.info("Trying to encrypt: " + msg);
         try {
             this.cipher.init(Cipher.ENCRYPT_MODE, this.encryptionKey);
 
             byte[] encrypted = this.cipher.doFinal(msg.getBytes());
-            String encoded = encoder.encode(encrypted);
+
+            String encoded = new String(Base64.encode(encrypted));
 
             logger.info("Encrypted to: " + encoded);
 
@@ -56,10 +58,12 @@ public class RSAMessageCryptor implements MessageCryptor {
 
     @Override
     public String decrypt(String msg) throws BrokenMessageException {
-        BASE64Decoder decoder = new BASE64Decoder();
+        logger.info("Trying to decrypt: " + msg);
         try {
             this.cipher.init(Cipher.DECRYPT_MODE, this.decryptionKey);
-            byte[] decoded = decoder.decodeBuffer(msg);
+            byte[] decoded = Base64.decode(msg);
+
+            //logger.info("Decrypting: " + new String(decoded));
 
             byte[] decrypted = this.cipher.doFinal(decoded);
 
@@ -68,7 +72,7 @@ public class RSAMessageCryptor implements MessageCryptor {
             logger.info("Decrypted to: " + ret);
 
             return ret;
-        }catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
             throw new BrokenMessageException(e);
         }
     }

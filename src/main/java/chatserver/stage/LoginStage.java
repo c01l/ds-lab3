@@ -34,6 +34,7 @@ public class LoginStage implements ClientStage {
             UserData u = handshake.getLastLoggedIn();
 
             u.setClient(secureChannel);
+            u.setOnlineStatus(true);
 
             return u;
         } catch (HandshakeFailedException e) {

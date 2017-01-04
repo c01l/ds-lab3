@@ -1,5 +1,6 @@
 package util.crypto.cryptors;
 
+import org.bouncycastle.util.encoders.Base64;
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 import util.crypto.BrokenMessageException;
@@ -48,16 +49,14 @@ public class AESMessageCryptor implements MessageCryptor {
 
     @Override
     public String decrypt(String msg) throws BrokenMessageException {
-        BASE64Decoder decoder = new BASE64Decoder();
-
         try {
-            byte[] data = decoder.decodeBuffer(msg);
+            byte[] data = Base64.decode(msg);
             byte[] decrypted = this.cipher.doFinal(data);
 
             String ret = new String(decrypted);
             logger.info("Decrypted to: " + ret);
             return ret;
-        } catch (IllegalBlockSizeException | BadPaddingException | IOException e) {
+        } catch (IllegalBlockSizeException | BadPaddingException e) {
             throw new BrokenMessageException(e);
         }
     }
@@ -67,10 +66,9 @@ public class AESMessageCryptor implements MessageCryptor {
         try {
             byte[] encrypted = this.cipher.doFinal(msg.getBytes());
 
-            BASE64Encoder encoder = new BASE64Encoder();
-            String encoded = encoder.encode(encrypted);
+            String encoded = new String(Base64.encode(encrypted));
 
-            logger.info("Encrypted to: " + encoder);
+            logger.info("Encrypted to: " + encoded);
 
             return encoded;
         } catch (IllegalBlockSizeException | BadPaddingException e) {
