@@ -233,7 +233,6 @@ public class PerformingStage implements Stage {
                     s = s.replace("" + (char) 31, "");
                 }
 
-                responseBuilder.append("- ");
                 responseBuilder.append(s);
 
                 if (udpResponse[UDPSIZE - 1] != 31) {

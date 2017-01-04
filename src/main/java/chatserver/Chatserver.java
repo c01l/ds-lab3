@@ -71,7 +71,7 @@ public class Chatserver implements IChatserverCli, Runnable {
         // load server key
         try {
             this.serverPrivateKey = Keys.readPrivatePEM(new File("keys/chatserver/chatserver.pem"));
-        } catch (IOException e){
+        } catch (IOException e) {
             logger.warning("Failed to load server private key!");
             e.printStackTrace();
         }
@@ -281,8 +281,10 @@ public class Chatserver implements IChatserverCli, Runnable {
                         StringBuilder builder = new StringBuilder();
                         synchronized (userData) {
                             for (UserData d : userData) {
-                                builder.append(d.getName());
-                                builder.append("\n");
+                                if (d.isOnline()) {
+                                    builder.append(d.getName());
+                                    builder.append("\n");
+                                }
                             }
                         }
 
