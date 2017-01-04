@@ -36,7 +36,7 @@ public class CryptoChannel implements CommunicationChannel, Decorated<Communicat
             public int read() throws IOException {
                 if (outbuffer.isEmpty() || pos >= outbuffer.length()) {
                     try {
-                        logger.info("Blocking...");
+                        logger.fine("Blocking...");
                         String line = stream.readLine();
 
                         if(line == null) {
@@ -54,7 +54,7 @@ public class CryptoChannel implements CommunicationChannel, Decorated<Communicat
                 }
 
                 char c = outbuffer.charAt(pos++);
-                logger.info("Returning: " + (int) c);
+                logger.finest("Returning: " + (int) c);
                 return c;
             }
 
