@@ -36,6 +36,8 @@ public class LoginStage implements Stage {
     private CommunicationChannel loggedInChannel = null;
     private String loggedInUser = null;
 
+    private boolean exitFlag = false;
+
     public LoginStage(StageGenerator generator, InputStream userInputStream, OutputStream userOutputStream, String host, int port, Key serverKey, String clientKeyDir) {
         this.userInputStream = userInputStream;
         this.userOutputStream = userOutputStream;
@@ -70,8 +72,11 @@ public class LoginStage implements Stage {
             }
         }
 
-
         logger.info("Shell is closed!");
+
+        if(this.exitFlag) {
+            return null; // close program
+        }
 
         // now that the shell closed itself we can read the Connection that we are going to use
 
@@ -121,6 +126,13 @@ public class LoginStage implements Stage {
                 e.printStackTrace();
             }
             return "Handshake failed!";
+        }
+
+        @Command
+        public String exit() {
+            exitFlag = true;
+            Thread.currentThread().interrupt();
+            return "Exiting...";
         }
     }
 }
