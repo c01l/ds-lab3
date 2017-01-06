@@ -5,11 +5,15 @@ import cli.SilentShell;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.rmi.RemoteException;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
 import chatserver.Chatserver.Marker;
+import nameserver.INameserverForChatserver;
+import nameserver.exceptions.AlreadyRegisteredException;
+import nameserver.exceptions.InvalidDomainException;
 import util.CommunicationChannel;
 
 public class ChatserverClientHandler extends SilentShell implements IServerClientHandler {
@@ -36,10 +40,12 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     private static final String MSG_RESPONSE_NOTLOGGEDIN = "Not logged in.";
 
     private CommunicationChannel channel;
+    private INameserverForChatserver nameserver;
     private final List<UserData> userDB;
 
-    public ChatserverClientHandler(String name, CommunicationChannel channel, List<UserData> userDB) throws IOException {
+    public ChatserverClientHandler(String name, CommunicationChannel channel, List<UserData> userDB, INameserverForChatserver nameserver) throws IOException {
         super(name, channel.getInputStream(), channel.getOutputStream());
+        this.nameserver = nameserver;
         this.channel = channel;
         this.userDB = userDB;
 
@@ -147,11 +153,21 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
             return Chatserver.Marker.MARKER_REGISTER_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
 
-        d.setLocalAddress(ipPort);
-
-        LOGGER.info("User set local ip to " + ipPort);
-
-        return Chatserver.Marker.MARKER_REGISTER_RESPONSE + MSG_RESPONSE_REGISTER_SUCCESSFUL.replace("%USERNAME%", d.getName());
+        try {
+            this.nameserver.registerUser(d.getName(), ipPort);
+            LOGGER.info("User set local ip to " + ipPort);
+            return Chatserver.Marker.MARKER_REGISTER_RESPONSE + MSG_RESPONSE_REGISTER_SUCCESSFUL.replace("%USERNAME%", d.getName());
+        } catch (RemoteException e) {
+            // TODO: proper error handling
+            e.printStackTrace();
+        } catch (AlreadyRegisteredException e) {
+            // TODO: proper error handling
+            e.printStackTrace();
+        } catch (InvalidDomainException e) {
+            // TODO: proper error handling
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Command("!lookup")
@@ -162,17 +178,18 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
             return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
 
-        synchronized (this.userDB) {
-            for(UserData d : this.userDB) {
-                if(d.getName().equals(username)) {
-
-                    String localAddr = d.getLocalAddress();
-                    if(localAddr != null) {
-                        return Marker.MARKER_LOOKUP_RESPONSE + localAddr;
-                    }
-                    break;
-                }
+        int firstDot = username.indexOf(".");
+        String name = username.substring(0, firstDot);
+        String nameserver = username.substring(firstDot + 1);
+        try {
+            String localAddr = this.nameserver.getNameserver(nameserver).lookup(name);
+            if(localAddr != null) {
+                return Marker.MARKER_LOOKUP_RESPONSE + localAddr;
+            } else {
+                // TODO
             }
+        } catch (RemoteException e) {
+            e.printStackTrace();
         }
 
         return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_LOOKUP_FAILED;

@@ -4,12 +4,16 @@ import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Socket;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import cli.Command;
 import cli.Shell;
+import nameserver.INameserverForChatserver;
 import util.CommunicationChannel;
 import util.Config;
 import util.SimpleSocketCommunicationChannel;
@@ -32,6 +36,13 @@ public class Chatserver implements IChatserverCli, Runnable {
     private AsynchronousTCPServer tcpServer;
     private Shell shell;
 
+
+
+    private String registryHost;
+    private int registryPort;
+    private String rootId;
+    private INameserverForChatserver nameserver;
+
     /**
      * @param componentName      the name of the component - represented in the prompt
      * @param config             the configuration to use
@@ -47,6 +58,10 @@ public class Chatserver implements IChatserverCli, Runnable {
 
         logger = Logger.getLogger(this.componentName);
 	    logger.setLevel(Level.WARNING);
+
+        this.registryPort = this.config.getInt("registry.port");
+        this.registryHost = this.config.getString("registry.host");
+        this.rootId = this.config.getString("root_id");
 
         this.userData = new ArrayList<>();
         fillUserData(this.userData, new Config("user"));
@@ -80,6 +95,15 @@ public class Chatserver implements IChatserverCli, Runnable {
 
     @Override
     public void run() {
+
+        try {
+            this.nameserver = (INameserverForChatserver) LocateRegistry.getRegistry(this.registryHost, this.registryPort).lookup(this.rootId);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (NotBoundException e) {
+            e.printStackTrace();
+        }
+
         // setup TCP Server (requests are handled by ChatserverClientHandlerFactory)
         tcpServer = new AsynchronousTCPServer(this.config.getInt("tcp.port"), new ChatserverClientHandlerFactory());
         tcpServer.start();
@@ -139,7 +163,7 @@ public class Chatserver implements IChatserverCli, Runnable {
     private class ChatserverClientHandlerFactory implements ClientHandlerFactory {
         @Override
         public Runnable createClientHandler(Socket client) throws IOException {
-            return new ChatserverClientHandler(componentName, new SimpleSocketCommunicationChannel(client), userData);
+            return new ChatserverClientHandler(componentName, new SimpleSocketCommunicationChannel(client), userData, nameserver);
         }
     }
 
