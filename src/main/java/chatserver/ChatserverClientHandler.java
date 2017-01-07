@@ -146,7 +146,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Command("!register")
     @Override
     public String register(String ipPort) {
-        UserData d = findUserData(this.channel);
+        UserData d = this.user;
         if (d == null || !d.isOnline()) {
             return Chatserver.Marker.MARKER_REGISTER_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
@@ -173,7 +173,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Command("!lookup")
     @Override
     public String lookup(String username) {
-        UserData own = findUserData(this.channel);
+        UserData own = this.user;
         if(own==null || !own.isOnline()) {
             return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
