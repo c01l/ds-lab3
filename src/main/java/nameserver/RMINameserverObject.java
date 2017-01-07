@@ -92,23 +92,10 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
 
     @Override
     public INameserverForChatserver getNameserver(String zone) throws RemoteException {
-        int index = zone.lastIndexOf('.');
-        if (index < 0) {
-            if(this.nameserverHashMap.containsKey(zone)) {
-                return this.nameserverHashMap.get(zone);
-            } else {
-                return null;
-            }
+        if(this.nameserverHashMap.containsKey(zone)) {
+            return this.nameserverHashMap.get(zone);
         } else {
-            String next = zone.substring(index + 1);
-            String rest = zone.substring(0, index);
-
-            if(this.nameserverHashMap.containsKey(next)) {
-                INameserver childNs = this.nameserverHashMap.get(next);
-                return childNs.getNameserver(rest);
-            } else {
-                return null;
-            }
+            return null;
         }
     }
 

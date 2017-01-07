@@ -40,12 +40,12 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     private static final String MSG_RESPONSE_NOTLOGGEDIN = "Not logged in.";
 
     private CommunicationChannel channel;
-    private INameserverForChatserver nameserver;
+    private INameserverForChatserver rootNameserver;
     private final List<UserData> userDB;
 
     public ChatserverClientHandler(String name, CommunicationChannel channel, List<UserData> userDB, INameserverForChatserver nameserver) throws IOException {
         super(name, channel.getInputStream(), channel.getOutputStream());
-        this.nameserver = nameserver;
+        this.rootNameserver = nameserver;
         this.channel = channel;
         this.userDB = userDB;
 
@@ -154,7 +154,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
         }
 
         try {
-            this.nameserver.registerUser(d.getName(), ipPort);
+            this.rootNameserver.registerUser(d.getName(), ipPort);
             LOGGER.info("User set local ip to " + ipPort);
             return Chatserver.Marker.MARKER_REGISTER_RESPONSE + MSG_RESPONSE_REGISTER_SUCCESSFUL.replace("%USERNAME%", d.getName());
         } catch (RemoteException e) {
@@ -178,17 +178,21 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
             return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
 
-        int firstDot = username.indexOf(".");
-        String name = username.substring(0, firstDot);
-        String nameserver = username.substring(firstDot + 1);
+        String[] zones = username.split("\\.");
+        INameserverForChatserver nameserver = this.rootNameserver;
+
         try {
-            String localAddr = this.nameserver.getNameserver(nameserver).lookup(name);
+            for(int index = zones.length - 1; index > 0; index--) {
+                nameserver = nameserver.getNameserver(zones[index]);
+            }
+            String localAddr = nameserver.lookup(zones[0]);
             if(localAddr != null) {
                 return Marker.MARKER_LOOKUP_RESPONSE + localAddr;
             } else {
                 // TODO
             }
         } catch (RemoteException e) {
+            // TODO
             e.printStackTrace();
         }
 
