@@ -3,72 +3,149 @@ package nameserver;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.Scanner;
 
+import cli.Command;
+import cli.Shell;
+import nameserver.exceptions.AlreadyRegisteredException;
+import nameserver.exceptions.InvalidDomainException;
 import util.Config;
 
-/**
- * Please note that this class is not needed for Lab 1, but will later be used
- * in Lab 2. Hence, you do not have to implement it for the first submission.
- */
 public class Nameserver implements INameserverCli, Runnable {
 
-	private String componentName;
-	private Config config;
-	private InputStream userRequestStream;
-	private PrintStream userResponseStream;
+    private String componentName;
+    private Config config;
+    private InputStream userRequestStream;
+    private PrintStream userResponseStream;
 
-	/**
-	 * @param componentName
-	 *            the name of the component - represented in the prompt
-	 * @param config
-	 *            the configuration to use
-	 * @param userRequestStream
-	 *            the input stream to read user input from
-	 * @param userResponseStream
-	 *            the output stream to write the console output to
-	 */
-	public Nameserver(String componentName, Config config,
-			InputStream userRequestStream, PrintStream userResponseStream) {
-		this.componentName = componentName;
-		this.config = config;
-		this.userRequestStream = userRequestStream;
-		this.userResponseStream = userResponseStream;
 
-		// TODO
-	}
+    private Shell shell;
+    private Registry registry;
 
-	@Override
-	public void run() {
-		// TODO
-	}
+    private String registryHost;
+    private int registryPort;
+    private String rootId;
+    private String domain = "/";
+    private boolean isRoot;
 
-	@Override
-	public String nameservers() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    private RMINameserverObject RMIObject;
 
-	@Override
-	public String addresses() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    /**
+     * @param componentName      the name of the component - represented in the prompt
+     * @param config             the configuration to use
+     * @param userRequestStream  the input stream to read user input from
+     * @param userResponseStream the output stream to write the console output to
+     */
+    public Nameserver(String componentName, Config config,
+                      InputStream userRequestStream, PrintStream userResponseStream) {
+        this.componentName = componentName;
+        this.config = config;
+        this.userRequestStream = userRequestStream;
+        this.userResponseStream = userResponseStream;
 
-	@Override
-	public String exit() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+        this.registryPort = this.config.getInt("registry.port");
+        this.registryHost = this.config.getString("registry.host");
+        this.rootId = this.config.getString("root_id");
+        this.isRoot = !this.config.listKeys().contains("domain");
+        if (!isRoot) this.domain = this.config.getString("domain");
 
-	/**
-	 * @param args
-	 *            the first argument is the name of the {@link Nameserver}
-	 *            component
-	 */
-	public static void main(String[] args) {
-		Nameserver nameserver = new Nameserver(args[0], new Config(args[0]),
-				System.in, System.out);
-		// TODO: start the nameserver
-	}
 
+        try {
+            this.RMIObject = new RMINameserverObject();
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    @Override
+    public void run() {
+        if (this.isRoot) {
+            // launch registry
+            try {
+                this.registry = LocateRegistry.createRegistry(this.registryPort);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+
+            // bind itself to the registry
+            try {
+                this.registry.rebind(this.rootId, this.RMIObject);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        } else {
+            // register this nameserver
+            try {
+                this.registry = LocateRegistry.getRegistry(this.registryHost, this.registryPort);
+                INameserver root = (INameserver) registry.lookup(this.rootId);
+                root.registerNameserver(this.domain, this.RMIObject, this.RMIObject);
+            } catch (NotBoundException e) {
+                e.printStackTrace();
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            } catch (InvalidDomainException e) {
+                e.printStackTrace();
+            } catch (AlreadyRegisteredException e) {
+                e.printStackTrace();
+            }
+        }
+        // start main loop to handle user input
+        shell = new Shell(componentName, this.userRequestStream, this.userResponseStream);
+        shell.register(this);
+        shell.run();
+    }
+
+    @Override
+    @Command("!nameservers")
+    public String nameservers() throws IOException {
+        return this.RMIObject.getNameservers();
+    }
+
+    @Override
+    @Command("!addresses")
+    public String addresses() throws IOException {
+        return this.RMIObject.getAddresses();
+    }
+
+    @Override
+    @Command("!exit")
+    public String exit() throws IOException {
+        this.shell.close();
+        if (this.isRoot) {
+            try {
+                this.registry.unbind(this.rootId);
+            } catch (NotBoundException e) {
+                e.printStackTrace();
+            }
+        }
+        UnicastRemoteObject.unexportObject(this.RMIObject, true);
+        return "Successfully shutdown nameserver.";
+    }
+
+    /**
+     * @param args the first argument is the name of the {@link Nameserver}
+     *             component
+     */
+    public static void main(String[] args) {
+        String config;
+        if (args.length < 1) {
+            System.out.print("configname: ");
+            Scanner in = new Scanner(System.in);
+            config = in.nextLine();
+        } else {
+            config = args[0];
+        }
+        Nameserver nameserver = new Nameserver(config, new Config(config),
+                System.in, System.out);
+        Thread t = new Thread(nameserver);
+        t.start();
+        System.out.println("main done");
+    }
 }
+

@@ -5,6 +5,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Socket;
 import java.security.Key;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -13,6 +16,7 @@ import chatserver.stage.LoginStage;
 import chatserver.stage.PerformingStage;
 import cli.Command;
 import cli.Shell;
+import nameserver.INameserverForChatserver;
 import util.CommunicationChannel;
 import util.Config;
 import util.Keys;
@@ -39,6 +43,12 @@ public class Chatserver implements IChatserverCli, Runnable {
     private Key serverPrivateKey;
     private String clientKeyDir;
 
+
+    private String registryHost;
+    private int registryPort;
+    private String rootId;
+    private INameserverForChatserver nameserver;
+
     /**
      * @param componentName      the name of the component - represented in the prompt
      * @param config             the configuration to use
@@ -54,6 +64,10 @@ public class Chatserver implements IChatserverCli, Runnable {
 
         logger = Logger.getLogger(this.componentName);
         //logger.setLevel(Level.WARNING);
+
+        this.registryPort = this.config.getInt("registry.port");
+        this.registryHost = this.config.getString("registry.host");
+        this.rootId = this.config.getString("root_id");
 
         this.userData = new ArrayList<>();
         fillUserData(this.userData, new Config("user"));
@@ -98,6 +112,15 @@ public class Chatserver implements IChatserverCli, Runnable {
         }
 
         this.clientKeyDir = this.config.getString("keys.dir");
+
+
+        try {
+            this.nameserver = (INameserverForChatserver) LocateRegistry.getRegistry(this.registryHost, this.registryPort).lookup(this.rootId);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (NotBoundException e) {
+            e.printStackTrace();
+        }
 
         // setup TCP Server (requests are handled by ChatserverClientHandlerFactory)
         tcpServer = new AsynchronousTCPServer(this.config.getInt("tcp.port"), new ChatserverClientHandlerFactory());
@@ -179,7 +202,7 @@ public class Chatserver implements IChatserverCli, Runnable {
                     logger.info("Successfully logged in user: " + d.getName());
 
                     try {
-                        PerformingStage performingStage = new PerformingStage(userData);
+                        PerformingStage performingStage = new PerformingStage(userData, nameserver);
                         d = performingStage.execute(d, d.getClient());
                     } catch (TerminateSessionException e) {
                         logger.warning("Exception occured while performing, terminating session!");
