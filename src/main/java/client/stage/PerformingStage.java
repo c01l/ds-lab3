@@ -7,14 +7,22 @@ import client.ConnectionCapsule;
 import client.ConnectionManager;
 import client.IClientCli;
 import client.PrivateMessageReceiver;
+import org.bouncycastle.util.encoders.Base64;
 import util.CommunicationChannel;
+import util.HMAC;
+import util.Keys;
 import util.LineStreamSplitter;
 
+import javax.crypto.Mac;
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,7 +54,9 @@ public class PerformingStage implements Stage {
     private String myName;
     private boolean logoutFlag = false;
 
-    public PerformingStage(StageGenerator generator, CommunicationChannel channel, InputStream userRequestStream, OutputStream userResponseStream, String hostname, int udpPort, String myName) {
+    private Key sharedSecret;
+
+    public PerformingStage(StageGenerator generator, CommunicationChannel channel, InputStream userRequestStream, OutputStream userResponseStream, String hostname, int udpPort, String myName, String hmacPath) {
         this.generator = generator;
         this.channel = channel;
         this.userRequestStream = userRequestStream;
@@ -60,7 +70,13 @@ public class PerformingStage implements Stage {
             logger.log(Level.SEVERE, "Cannot find '" + hostname + "'!");
         }
 
-        this.pool = Executors.newFixedThreadPool(3);
+        try {
+            this.sharedSecret = Keys.readSecretKey(new File(hmacPath));
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Unable to load shared secret!");
+        }
+
+        this.pool = Executors.newFixedThreadPool(4);
     }
 
     @Override
@@ -110,7 +126,7 @@ public class PerformingStage implements Stage {
         logger.info("Exited Performing Stage");
 
         // in case we just want a logout -> open new login-stage
-        if(this.logoutFlag) {
+        if (this.logoutFlag) {
             return generator.generateLoginStage();
         }
 
@@ -277,12 +293,33 @@ public class PerformingStage implements Stage {
                 return MSG_FAILED;
             }
 
+            String finalMessage = myName + ": " + message;
+            String hmac = new String(HMAC.generateHMAC(finalMessage, sharedSecret));
+
             // open socket for client connection
             ConnectionManager manager = new ConnectionManager(addr.getHostName(), port);
-            manager.getConnection().writeLine(myName + ": " + message);
-            String response = manager.getConnection().readLine();
+            manager.getConnection().writeLine(hmac + " " + finalMessage);
 
+            logger.info("Sending Private Message: " + hmac + " " + finalMessage);
+            String response = manager.getConnection().readLine();
             manager.shutdown();
+
+            String responseHMACString = response.substring(0, response.indexOf(' '));
+            String responseMessageString = response.substring(response.indexOf(' ') + 1);
+
+            byte[] generatedResponseHMAC = HMAC.generateHMAC(responseMessageString, sharedSecret);
+
+            if (!MessageDigest.isEqual(generatedResponseHMAC, responseHMACString.getBytes())) {
+                System.out.println("Received Message was tampered!");
+                logger.info("Received Message was tampered!");
+                return "Received Message was tampered!";
+            } else {
+                if (responseMessageString.startsWith("!tampered")) {
+                    System.out.println("Your message was tampered!");
+                    logger.info("Your message was tampered!");
+                    return "Your message was tampered!";
+                }
+            }
 
             return MSG_SUCCESS.replace("%USERNAME%", username).replace("%RESPONSE%", response);
         }
@@ -332,7 +369,7 @@ public class PerformingStage implements Stage {
 
             // try to open socket before telling the server its open
             try {
-                privateMsgReciever = new PrivateMessageReceiver(port, new PrintStream(userResponseStream));
+                privateMsgReciever = new PrivateMessageReceiver(port, new PrintStream(userResponseStream), sharedSecret);
                 pool.execute(privateMsgReciever);
             } catch (IOException e) {
                 return "Failed to open socket. Did not publish IP + Port to server.";

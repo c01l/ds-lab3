@@ -67,7 +67,10 @@ public class Client implements Runnable {
         int serverUdpPort = this.config.getInt("chatserver.udp.port");
         String clientKeyDir = this.config.getString("keys.dir");
 
-        StageGenerator generator = new StageGenerator(this.userRequestStream, this.userResponseStream, serverHostname, serverPort, serverUdpPort, serverKey, clientKeyDir);
+        String hmacPath = this.config.getString("hmac.key");
+        logger.info("Shared Secret Dir: " + hmacPath);
+
+        StageGenerator generator = new StageGenerator(this.userRequestStream, this.userResponseStream, serverHostname, serverPort, serverUdpPort, serverKey, clientKeyDir, hmacPath);
 
         Stage stage = generator.generateLoginStage();
         while(stage != null) {
