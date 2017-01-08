@@ -1,8 +1,12 @@
 package client;
 
+import util.HMAC;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.Key;
+import java.security.MessageDigest;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -17,9 +21,13 @@ public class PrivateMessageReceiver implements Runnable {
     private PrintStream userOutputStream;
     private ExecutorService pool;
 
-    public PrivateMessageReceiver(int port, PrintStream userOutputStream) throws IOException {
+    private Key sharedSecret;
+
+    public PrivateMessageReceiver(int port, PrintStream userOutputStream, Key sharedSecret) throws IOException {
         this.port = port;
         this.userOutputStream = userOutputStream;
+
+        this.sharedSecret = sharedSecret;
 
         this.socket = new ServerSocket(port);
         this.pool = Executors.newCachedThreadPool();
@@ -77,15 +85,36 @@ public class PrivateMessageReceiver implements Runnable {
 
                 String line = in.readLine();
                 logger.info("User sent: '" + line + "'");
+
+                String message, hMacString;
+
+                hMacString = line.substring(0, line.indexOf(' '));
+                message = line.substring(line.indexOf(' '));
+
+                byte[] generatedHMAC = HMAC.generateHMAC(message, sharedSecret);
+
+                String generatedHMACString = new String(generatedHMAC);
+
+                logger.info("Recived HMAC: <"+hMacString+">");
+                logger.info("Generated HMAC: <"+generatedHMACString+">");
+                logger.info("Validating HMACs: " + MessageDigest.isEqual(hMacString.getBytes(), generatedHMAC));
+
                 // write line to output stream
                 userOutputStream.println(line);
 
-                // respond with "!ack"
-                logger.fine("Sending !ack...");
-                out.println("!ack");
-                out.flush();
+                String response;
+                if(MessageDigest.isEqual(hMacString.getBytes(), generatedHMAC)){        //Valid
+                    logger.fine("Sending !ack...");
+                    response = "!ack";
+                }else{                  //Tampered
+                    logger.fine("Message was tampered!");
+                    logger.fine("Sender will be informed about this incident");
+                    System.out.println(message);
+                    response = "!tampered " + message;
+                }
 
-                logger.fine("Sent !ack");
+                out.println(HMAC.generateHMAC(response, sharedSecret) + " " + response);
+                out.flush();
 
             } catch (IOException ex) {
                 logger.warning("Error while handling client: " + ex.getMessage());

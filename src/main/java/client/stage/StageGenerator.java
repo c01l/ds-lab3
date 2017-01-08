@@ -20,7 +20,9 @@ public class StageGenerator {
     private Key serverKey;
     private String clientKeyDir;
 
-    public StageGenerator(InputStream userInputStream, OutputStream userOutputStream, String host, int tcpPort, int udpPort, Key serverKey, String clientKeyDir) {
+    private String hmacPath;
+
+    public StageGenerator(InputStream userInputStream, OutputStream userOutputStream, String host, int tcpPort, int udpPort, Key serverKey, String clientKeyDir, String hmacPath) {
         this.userInputStream = userInputStream;
         this.userOutputStream = userOutputStream;
         this.host = host;
@@ -28,6 +30,7 @@ public class StageGenerator {
         this.serverKey = serverKey;
         this.udpPort = udpPort;
         this.clientKeyDir = clientKeyDir;
+        this.hmacPath = hmacPath;
     }
 
     public LoginStage generateLoginStage() {
@@ -35,7 +38,7 @@ public class StageGenerator {
     }
 
     public PerformingStage generatePerformingStage(CommunicationChannel channel, String username) {
-        return new PerformingStage(this, channel, this.userInputStream, this.userOutputStream, this.host, this.udpPort, username);
+        return new PerformingStage(this, channel, this.userInputStream, this.userOutputStream, this.host, this.udpPort, username, this.hmacPath);
     }
 
 }
