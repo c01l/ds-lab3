@@ -162,6 +162,10 @@ public class PerformingStage implements Stage {
             return "This command should not be used!";
         }
 
+        public String authenticate(String username) {
+            return "Already logged in!";
+        }
+
         @Command
         public String logout() throws IOException {
             final String marker = Chatserver.Marker.MARKER_LOGOUT_RESPONSE;

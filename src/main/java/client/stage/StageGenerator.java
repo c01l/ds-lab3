@@ -31,7 +31,7 @@ public class StageGenerator {
     }
 
     public LoginStage generateLoginStage() {
-        return new LoginStage(this, this.userInputStream, this.userOutputStream, this.host, this.tcpPort, this.serverKey, this.clientKeyDir);
+        return new LoginStage(this, this.userInputStream, this.userOutputStream, this.host, this.tcpPort, this.serverKey, this.clientKeyDir, this.host, this.udpPort);
     }
 
     public PerformingStage generatePerformingStage(CommunicationChannel channel, String username) {

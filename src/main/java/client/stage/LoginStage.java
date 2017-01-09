@@ -13,14 +13,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.security.Key;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
 public class LoginStage implements Stage {
     private static final Logger logger = Logger.getLogger("LoginStage");
+
+    private static final int UDPSIZE = 1024;
 
     private InputStream userInputStream;
     private OutputStream userOutputStream;
@@ -38,7 +40,10 @@ public class LoginStage implements Stage {
 
     private boolean exitFlag = false;
 
-    public LoginStage(StageGenerator generator, InputStream userInputStream, OutputStream userOutputStream, String host, int port, Key serverKey, String clientKeyDir) {
+    private InetAddress udpServerAddr;
+    private int udpServerPort;
+
+    public LoginStage(StageGenerator generator, InputStream userInputStream, OutputStream userOutputStream, String host, int port, Key serverKey, String clientKeyDir, String hostname, int udpPort) {
         this.userInputStream = userInputStream;
         this.userOutputStream = userOutputStream;
         this.host = host;
@@ -46,6 +51,13 @@ public class LoginStage implements Stage {
         this.serverKey = serverKey;
         this.generator = generator;
         this.clientKeyDir = clientKeyDir;
+
+        try {
+            this.udpServerAddr = InetAddress.getByName(hostname);
+            this.udpServerPort = udpPort;
+        } catch (UnknownHostException e) {
+            logger.log(Level.SEVERE, "Cannot find '" + hostname + "'!");
+        }
     }
 
     @Override
@@ -74,13 +86,13 @@ public class LoginStage implements Stage {
 
         logger.info("Shell is closed!");
 
-        if(this.exitFlag) {
+        if (this.exitFlag) {
             return null; // close program
         }
 
         // now that the shell closed itself we can read the Connection that we are going to use
 
-        if(loggedInChannel != null) {
+        if (loggedInChannel != null) {
             return generator.generatePerformingStage(loggedInChannel, loggedInUser);
         } else {
             try {
@@ -94,7 +106,7 @@ public class LoginStage implements Stage {
 
     private class LoginShell {
         @Command
-        public String authenticate(String username) { // TODO change name
+        public String authenticate(String username) {
             Key clientKey;
             try {
                 // load private key
@@ -133,6 +145,76 @@ public class LoginStage implements Stage {
             exitFlag = true;
             Thread.currentThread().interrupt();
             return "Exiting...";
+        }
+
+        @Command
+        public String logout() {
+            return "Not logged in!";
+        }
+
+        @Command
+        public String send(String msg) {
+            return "Not logged in!";
+        }
+
+        @Command
+        public String msg(String name, String msg) {
+            return "Not logged in!";
+        }
+
+        @Command
+        public String lookup(String name) {
+            return "Not logged in!";
+        }
+
+        @Command
+        public String register(String ip) {
+            return "Not logged in!";
+        }
+
+        @Command
+        public String lastMsg() {
+            return "Not logged in!";
+        }
+
+        @Command
+        public String list() throws IOException {
+            DatagramSocket udpSocket = new DatagramSocket();
+
+            // send udp packet to server
+            byte[] data = "!list".getBytes();
+            DatagramPacket packet = new DatagramPacket(data, data.length, udpServerAddr, udpServerPort);
+            udpSocket.send(packet);
+
+            logger.info("Sent udp packet to " + udpServerAddr + ":" + udpServerPort);
+
+            StringBuilder responseBuilder = new StringBuilder();
+
+            // wait for response
+            byte[] udpResponse = new byte[UDPSIZE];
+            DatagramPacket responsePacket = new DatagramPacket(udpResponse, udpResponse.length);
+            for (; ; ) {
+                logger.info("Waiting for response packet...");
+
+                udpSocket.receive(responsePacket);
+
+                logger.info("Got packet");
+
+                String s = new String(udpResponse);
+                if (s.endsWith("" + (char) 31)) {
+                    s = s.replace("" + (char) 31, "");
+                }
+
+                responseBuilder.append(s);
+
+                if (udpResponse[UDPSIZE - 1] != 31) {
+                    break; // there will be no next packet
+                }
+            }
+            logger.info("Recieved udp packet(s)");
+
+            // read response from array
+            return "Online users:\n" + responseBuilder.toString();
         }
     }
 }
