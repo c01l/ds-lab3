@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.LogManager;
 
 public class Client implements Runnable {
 
@@ -47,7 +48,6 @@ public class Client implements Runnable {
         this.userResponseStream = userResponseStream;
 
         this.logger = Logger.getLogger(componentName);
-        //this.logger.setLevel(Level.WARNING);
     }
 
     @Override
@@ -86,6 +86,7 @@ public class Client implements Runnable {
      * @param args the first argument is the name of the {@link Client} component
      */
     public static void main(String[] args) {
+		LogManager.getLogManager().reset();
         Client client = new Client(args[0], new Config("client"), System.in,
                 System.out);
         client.run();

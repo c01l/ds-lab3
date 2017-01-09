@@ -304,57 +304,56 @@ public class PerformingStage implements Stage {
             String hmac = new String(HMAC.generateHMAC(finalMessage, sharedSecret));
 
             // open socket for client connection
-            //ConnectionManager manager = new ConnectionManager(addr.getHostName(), port);
-            //manager.getConnection().writeLine(hmac + " " + finalMessage);
-		
 			try{
-			Socket socket = new Socket(addr.getHostName(), port);
-			CommunicationChannel channel = new SimpleSocketCommunicationChannel(socket);
+					Socket socket = new Socket(addr.getHostName(), port);
+					CommunicationChannel channel = new SimpleSocketCommunicationChannel(socket);
 
-			PrintWriter writer = new PrintWriter(channel.getOutputStream());
-			LineReader reader = new LineReader(channel.getInputStream());
-			
-			writer.println(hmac + " " + finalMessage);
-			writer.flush();
+					PrintWriter writer = new PrintWriter(channel.getOutputStream());
+					LineReader reader = new LineReader(channel.getInputStream());
+					
+					writer.println(hmac + " " + finalMessage);
+					writer.flush();
+					logger.info("Sent Private Message: <" + hmac + " " + finalMessage + ">");
 
-	        logger.info("Sending Private Message: " + hmac + " " + finalMessage);
-            String response = reader.readLine();
 
-			logger.info("Raw Response: <"+response+">");
-            String responseHMACString = response.substring(0, response.indexOf(' '));
-            String responseMessageString = response.substring(response.indexOf(' ') + 1);
+					String response = reader.readLine();
+					logger.info("Raw Response: <"+response+">");
 
-            logger.info("Response Message <"+responseMessageString+">");
-			logger.info("Response HMAC <"+responseHMACString+">");
+					if(response.indexOf(' ') == -1){
+						logger.info("The received response was in a wrong format!");
+						return "Interpreting response failed!";
+					}
 
-			byte[] generatedResponseHMAC = HMAC.generateHMAC(responseMessageString, sharedSecret);
-		
-			String genHMAC = new String(generatedResponseHMAC);
-			logger.info("Generated HMAC <"+genHMAC+">");
-            
+					String responseHMACString = response.substring(0, response.indexOf(' '));
+					String responseMessageString = response.substring(response.indexOf(' ') + 1);
 
-			socket.close();
+					logger.info("Response Message <"+responseMessageString+">");
+					logger.info("Response HMAC <"+responseHMACString+">");
 
-			if (!MessageDigest.isEqual(genHMAC.getBytes(), responseHMACString.getBytes())) {
-                System.out.println("Received Message was tampered!");
-                logger.info("Received Message was tampered!");
-                return "Received Message was tampered!";
-            } else {
-                if (responseMessageString.startsWith("!tampered")) {
-                    System.out.println("Your message was tampered!");
-                    logger.info("Your message was tampered!");
-                    return "Your message was tampered!";
-                }
-            }
-            
-			return MSG_SUCCESS.replace("%USERNAME%", username).replace("%RESPONSE%", response);
-
+					byte[] generatedResponseHMAC = HMAC.generateHMAC(responseMessageString, sharedSecret);
+				
+					String genHMAC = new String(generatedResponseHMAC);
+					logger.info("Generated HMAC <"+genHMAC+">");
+				
+					socket.close();
+					if (!MessageDigest.isEqual(generatedResponseHMAC, responseHMACString.getBytes())) {
+						System.out.println("Received response was tampered!");
+						logger.info("Received response was tampered!");
+						return "Received response was tampered!";
+					} else {
+						if (responseMessageString.startsWith("!tampered")) {
+							System.out.println("Your private message was tampered!");
+							logger.info("Your private message was tampered!");
+							return "Your private message was tampered!";
+						}
+					}
+					
+					return MSG_SUCCESS.replace("%USERNAME%", username).replace("%RESPONSE%", responseMessageString);
 			}catch(IOException e){
 				logger.info("Unable to close socket!");
 			}
             
-
-            return "Message Failed";
+            return "Private Message Failed";
         }
 
         @Command

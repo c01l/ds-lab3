@@ -13,10 +13,10 @@ public class HMAC {
     private static final Logger logger = Logger.getLogger("HMAC");
 
     /**
-     *
-     * @param message
-     * @param sharedSecret
-     * @return
+     * This method generates the HMAC for a given message and a shared secret. The return is Base64 encoded.
+     * @param message Message that will be used to generate the HMAC
+     * @param sharedSecret The used shared secret
+     * @return The HMAC is returned in a Base6-Encoding
      */
     public static byte[] generateHMAC(String message, Key sharedSecret){
         Mac hMac = null;

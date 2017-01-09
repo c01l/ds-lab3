@@ -9,6 +9,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Scanner;
+import java.util.logging.LogManager;
 
 import cli.Command;
 import cli.Shell;
@@ -133,6 +134,7 @@ public class Nameserver implements INameserverCli, Runnable {
      *             component
      */
     public static void main(String[] args) {
+		LogManager.getLogManager().reset();
         String config;
         if (args.length < 1) {
             System.out.print("configname: ");

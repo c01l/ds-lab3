@@ -11,6 +11,8 @@ import java.rmi.registry.LocateRegistry;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.LogManager;
+
 
 import chatserver.stage.LoginStage;
 import chatserver.stage.PerformingStage;
@@ -230,6 +232,7 @@ public class Chatserver implements IChatserverCli, Runnable {
      *             component
      */
     public static void main(String[] args) {
+		LogManager.getLogManager().reset();
         Chatserver chatserver = new Chatserver(args[0],
                 new Config("chatserver"), System.in, System.out);
         chatserver.run();
