@@ -24,7 +24,7 @@ public class ComponentFactory {
 	 * @throws Exception
 	 *             if an exception occurs
 	 */
-	public IClientCli createClient(String componentName, TestInputStream in,
+	public Client createClient(String componentName, TestInputStream in,
 			TestOutputStream out) throws Exception {
 		/*
 		 * TODO: Here you can do anything in order to construct a client

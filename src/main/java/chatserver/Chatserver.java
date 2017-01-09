@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Socket;
+import java.security.Key;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -11,11 +12,14 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import chatserver.stage.LoginStage;
+import chatserver.stage.PerformingStage;
 import cli.Command;
 import cli.Shell;
 import nameserver.INameserverForChatserver;
 import util.CommunicationChannel;
 import util.Config;
+import util.Keys;
 import util.SimpleSocketCommunicationChannel;
 
 public class Chatserver implements IChatserverCli, Runnable {
@@ -36,6 +40,8 @@ public class Chatserver implements IChatserverCli, Runnable {
     private AsynchronousTCPServer tcpServer;
     private Shell shell;
 
+    private Key serverPrivateKey;
+    private String clientKeyDir;
 
 
     private String registryHost;
@@ -57,7 +63,7 @@ public class Chatserver implements IChatserverCli, Runnable {
         this.userResponseStream = userResponseStream;
 
         logger = Logger.getLogger(this.componentName);
-	    logger.setLevel(Level.WARNING);
+        //logger.setLevel(Level.WARNING);
 
         this.registryPort = this.config.getInt("registry.port");
         this.registryHost = this.config.getString("registry.host");
@@ -88,13 +94,25 @@ public class Chatserver implements IChatserverCli, Runnable {
                 String name = key.substring(0, loc);
                 String password = config.getString(key);
 
-                list.add(new UserData(name, password));
+
+                list.add(new UserData(name, password, null));
+                logger.info("Successfully added user '" + name + "'!");
             }
         }
     }
 
     @Override
     public void run() {
+        // load server key
+        try {
+            this.serverPrivateKey = Keys.readPrivatePEM(new File(this.config.getString("key")));
+        } catch (IOException e) {
+            logger.warning("Failed to load server private key!");
+            e.printStackTrace();
+        }
+
+        this.clientKeyDir = this.config.getString("keys.dir");
+
 
         try {
             this.nameserver = (INameserverForChatserver) LocateRegistry.getRegistry(this.registryHost, this.registryPort).lookup(this.rootId);
@@ -163,7 +181,47 @@ public class Chatserver implements IChatserverCli, Runnable {
     private class ChatserverClientHandlerFactory implements ClientHandlerFactory {
         @Override
         public Runnable createClientHandler(Socket client) throws IOException {
-            return new ChatserverClientHandler(componentName, new SimpleSocketCommunicationChannel(client), userData, nameserver);
+            final CommunicationChannel channel = new SimpleSocketCommunicationChannel(client);
+            return new Runnable() {
+                @Override
+                public void run() {
+                    UserData d;
+                    try {
+                        LoginStage loginStage = new LoginStage(serverPrivateKey, userData, clientKeyDir);
+                        d = loginStage.execute(null, channel);
+                    } catch (TerminateSessionException e) {
+                        logger.warning("Exception occured while logging in, terminating session!");
+                        try {
+                            channel.close();
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
+                        return;
+                    }
+
+                    logger.info("Successfully logged in user: " + d.getName());
+
+                    try {
+                        PerformingStage performingStage = new PerformingStage(userData, nameserver);
+                        d = performingStage.execute(d, d.getClient());
+                    } catch (TerminateSessionException e) {
+                        logger.warning("Exception occured while performing, terminating session!");
+                        try {
+                            channel.close();
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
+                        return;
+                    }
+
+                    // client shell exited -> closing connection
+                    try {
+                        channel.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
         }
     }
 
@@ -187,7 +245,7 @@ public class Chatserver implements IChatserverCli, Runnable {
         public UDPServerThread(int port) {
             this.port = port;
 
-	    this.LOGGER.setLevel(Level.WARNING);
+            this.LOGGER.setLevel(Level.WARNING);
         }
 
         @Override
@@ -233,8 +291,10 @@ public class Chatserver implements IChatserverCli, Runnable {
                         StringBuilder builder = new StringBuilder();
                         synchronized (userData) {
                             for (UserData d : userData) {
-                                builder.append(d.getName());
-                                builder.append("\n");
+                                if (d.isOnline()) {
+                                    builder.append(d.getName());
+                                    builder.append("\n");
+                                }
                             }
                         }
 
@@ -247,7 +307,7 @@ public class Chatserver implements IChatserverCli, Runnable {
                             System.arraycopy(toSend, pos, buffer, 0, Math.min((UDPSIZE - 1), toSend.length - pos));
 
                             // add another packet will follow flag to the package if needed
-                            if(pos + UDPSIZE - 1 < builder.length()) {
+                            if (pos + UDPSIZE - 1 < builder.length()) {
                                 buffer[UDPSIZE - 1] = 31; // Unit Seperator
                             }
 

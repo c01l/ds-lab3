@@ -1,14 +1,14 @@
 package client;
 
+import util.SimpleSocketCommunicationChannel;
+
 import java.io.IOException;
+import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Created by ROLAND on 02.11.2016.
- */
 public class ConnectionManager {
 
     private String hostname;
@@ -63,7 +63,7 @@ public class ConnectionManager {
 
     private ConnectionCapsule instantiateConnection() {
         try {
-            ConnectionCapsule capsule = new ConnectionCapsule(this.hostname, this.port);
+            ConnectionCapsule capsule = new ConnectionCapsule(new SimpleSocketCommunicationChannel(new Socket(this.hostname, this.port)));
 
             this.pool.execute(capsule.getSplitter());
 

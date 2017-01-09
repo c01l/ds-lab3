@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LineStreamSplitter implements Runnable {
 
-    private BufferedReader in;
+    private LineReader in;
     private boolean stopped = false;
 
     /*
@@ -18,7 +18,7 @@ public class LineStreamSplitter implements Runnable {
      */
     private final ConcurrentHashMap<String, Queue<String>> storage;
 
-    public LineStreamSplitter(BufferedReader in) {
+    public LineStreamSplitter(LineReader in) {
         this.in = in;
         this.storage = new ConcurrentHashMap<>();
 

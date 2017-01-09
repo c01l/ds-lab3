@@ -1,6 +1,7 @@
 package client;
 
 import util.CommunicationChannel;
+import util.LineReader;
 import util.LineStreamSplitter;
 import util.SimpleSocketCommunicationChannel;
 
@@ -19,16 +20,14 @@ public class ConnectionCapsule implements Closeable {
         LOGGER.setLevel(Level.WARNING);
     }
 
-    private Socket socket;
     private CommunicationChannel channel;
-    private BufferedReader in;
+    private LineReader in;
     private PrintWriter out;
     private LineStreamSplitter splitter;
 
-    public ConnectionCapsule(String hostname, int port) throws IOException {
-        this.socket = new Socket(hostname, port);
-        this.channel = new SimpleSocketCommunicationChannel(this.socket);
-        this.in = new BufferedReader(new InputStreamReader(this.channel.getInputStream()));
+    public ConnectionCapsule(CommunicationChannel channel) throws IOException {
+        this.channel = channel;
+        this.in = new LineReader(this.channel.getInputStream());
         this.out = new PrintWriter(this.channel.getOutputStream());
         this.splitter = new LineStreamSplitter(this.in);
     }
@@ -37,7 +36,7 @@ public class ConnectionCapsule implements Closeable {
         return this.splitter;
     }
 
-    public BufferedReader getIn() {
+    public LineReader getIn() {
         return this.in;
     }
 
@@ -57,29 +56,11 @@ public class ConnectionCapsule implements Closeable {
     @Override
     public void close() {
         try {
-            LOGGER.fine("Closing input...");
-            this.socket.shutdownInput();
-            LOGGER.fine("Input closed!");
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Failed to close incoming connection");
-            e.printStackTrace();
-        }
-
-        try {
             LOGGER.fine("Closing output...");
             this.channel.close();
             LOGGER.fine("Output closed!");
         }catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to close socket!");
-            e.printStackTrace();
-        }
-
-        try {
-            LOGGER.fine("Closing socket...");
-            this.socket.close();
-            LOGGER.fine("Socket closed!");
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Failed to close socket");
             e.printStackTrace();
         }
     }

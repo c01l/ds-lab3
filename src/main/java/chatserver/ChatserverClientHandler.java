@@ -42,19 +42,26 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     private CommunicationChannel channel;
     private INameserverForChatserver rootNameserver;
     private final List<UserData> userDB;
+    private final UserData user; // Thats the currently logged in one
 
-    public ChatserverClientHandler(String name, CommunicationChannel channel, List<UserData> userDB, INameserverForChatserver nameserver) throws IOException {
+    public ChatserverClientHandler(String name, CommunicationChannel channel, UserData user, List<UserData> userDB, INameserverForChatserver nameserver) throws IOException {
         super(name, channel.getInputStream(), channel.getOutputStream());
         this.rootNameserver = nameserver;
         this.channel = channel;
+        this.user = user;
         this.userDB = userDB;
 
         this.register(this);
     }
 
+
     @Command("!login")
     @Override
+    @Deprecated
     public String login(String username, String password) {
+        System.out.println("Client did something funny");
+        throw new UnsupportedOperationException("Login is replaced by authenticate");
+        /*
         // search for user in the user database
         for (UserData d : userDB) {
             if (d.getName().equals(username)) {
@@ -81,26 +88,22 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
         }
         LOGGER.info("User '" + username + "' not found!");
         return Chatserver.Marker.MARKER_LOGIN_RESPONSE + MSG_RESPONSE_LOGIN_FAILED;
+        */
     }
+
 
     @Command("!logout")
     @Override
     public String logout() {
-        UserData own = findUserData(this.channel);
-        if (own == null) {
-            LOGGER.warning("Cannot find UserData object for current channel!");
-            return Chatserver.Marker.MARKER_LOGOUT_RESPONSE + MSG_RESPONSE_LOGOUT_FAILED;
-        }
-
-        if (!own.isOnline()) {
+        if (!this.user.isOnline()) {
             return Marker.MARKER_LOGOUT_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
 
-        synchronized (own) {
-            LOGGER.info("Logout from " + own.getName());
+        synchronized (this.user) {
+            LOGGER.info("Logout from " + this.user.getName());
 
-            own.setOnlineStatus(false);
-            own.setClient(null);
+            this.user.setOnlineStatus(false);
+            this.user.setClient(null);
 
             try {
                 this.writeLine(Chatserver.Marker.MARKER_LOGOUT_RESPONSE + MSG_RESPONSE_LOGOUT_SUCCESSFUL);
@@ -118,17 +121,12 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Command("!send")
     @Override
     public String send(String message) {
-        UserData own = findUserData(this.channel);
-        if (own == null || !own.isOnline()) {
-            return Chatserver.Marker.MARKER_SEND_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
-        }
-
-        message = own.getName() + ": " + message; // append sender
+        message = this.user.getName() + ": " + message; // append sender
 
         // send to other clients
         synchronized (this.userDB) {
             for (UserData d : this.userDB) {
-                if (d.getClient() != this.channel && d.getClient() != null) {
+                if (d != this.user && d.getClient() != null) {
                     synchronized (d) {
                         try {
                             OutputStream os = d.getClient().getOutputStream();
@@ -148,12 +146,13 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Command("!register")
     @Override
     public String register(String ipPort) {
-        UserData d = findUserData(this.channel);
+        UserData d = this.user;
         if (d == null || !d.isOnline()) {
             return Chatserver.Marker.MARKER_REGISTER_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
 
         try {
+            this.user.setLocalAddress(ipPort);
             this.rootNameserver.registerUser(d.getName(), ipPort);
             LOGGER.info("User set local ip to " + ipPort);
             return Chatserver.Marker.MARKER_REGISTER_RESPONSE + MSG_RESPONSE_REGISTER_SUCCESSFUL.replace("%USERNAME%", d.getName());
@@ -173,7 +172,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Command("!lookup")
     @Override
     public String lookup(String username) {
-        UserData own = findUserData(this.channel);
+        UserData own = this.user;
         if(own==null || !own.isOnline()) {
             return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
@@ -197,17 +196,6 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
         }
 
         return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_LOOKUP_FAILED;
-    }
-
-    private UserData findUserData(CommunicationChannel socket) {
-        synchronized (this.userDB) {
-            for (UserData d : this.userDB) {
-                if (d.getClient() == socket) {
-                    return d;
-                }
-            }
-        }
-        return null;
     }
 
     @Override
