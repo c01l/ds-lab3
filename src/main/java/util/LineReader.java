@@ -18,9 +18,7 @@ public class LineReader {
 
         for(;;){
             int c = this.source.read();
-        	System.out.println(c);
 		    if(c == 10 || c == 0) {
-				System.out.println("LineOut: <"+builder.toString()+">");
                 return builder.toString();
             } else if(c == -1) {
                 if(builder.length() == 0) {
