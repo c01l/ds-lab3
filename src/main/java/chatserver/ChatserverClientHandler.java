@@ -150,23 +150,21 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
         if (d == null || !d.isOnline()) {
             return Chatserver.Marker.MARKER_REGISTER_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
-
         try {
             this.user.setLocalAddress(ipPort);
             this.rootNameserver.registerUser(d.getName(), ipPort);
             LOGGER.info("User set local ip to " + ipPort);
             return Chatserver.Marker.MARKER_REGISTER_RESPONSE + MSG_RESPONSE_REGISTER_SUCCESSFUL.replace("%USERNAME%", d.getName());
         } catch (RemoteException e) {
-            // TODO: proper error handling
             e.printStackTrace();
+            return Marker.MARKER_REGISTER_RESPONSE + e.getMessage();
         } catch (AlreadyRegisteredException e) {
-            // TODO: proper error handling
             e.printStackTrace();
-        } catch (InvalidDomainException e) {
-            // TODO: proper error handling
+            return Marker.MARKER_REGISTER_RESPONSE + "The user " + d.getName() + " is already registered.";
+        } catch (InvalidDomainException e){
             e.printStackTrace();
+            return Marker.MARKER_REGISTER_RESPONSE + "The Domain is not valid.";
         }
-        return null;
     }
 
     @Command("!lookup")
@@ -188,14 +186,12 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
             if(localAddr != null) {
                 return Marker.MARKER_LOOKUP_RESPONSE + localAddr;
             } else {
-                // TODO
+                return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_LOOKUP_FAILED + "(" + username + "is not registered on this server)";
             }
         } catch (RemoteException e) {
-            // TODO
             e.printStackTrace();
+            return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_LOOKUP_FAILED + "(" + e.getMessage() + ")";
         }
-
-        return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_LOOKUP_FAILED;
     }
 
     @Override
