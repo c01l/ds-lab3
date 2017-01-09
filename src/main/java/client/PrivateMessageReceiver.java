@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import util.LineReader;
 
 public class PrivateMessageReceiver implements Runnable {
 
@@ -78,7 +79,7 @@ public class PrivateMessageReceiver implements Runnable {
 
             try {
                 // open streams
-                BufferedReader in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
+                LineReader in = new LineReader(this.socket.getInputStream());
                 PrintWriter out = new PrintWriter(this.socket.getOutputStream());
 
                 logger.fine("reading users message");
@@ -89,13 +90,14 @@ public class PrivateMessageReceiver implements Runnable {
                 String message, hMacString;
 
                 hMacString = line.substring(0, line.indexOf(' '));
-                message = line.substring(line.indexOf(' '));
+                message = line.substring(line.indexOf(' ') + 1);
 
                 byte[] generatedHMAC = HMAC.generateHMAC(message, sharedSecret);
 
                 String generatedHMACString = new String(generatedHMAC);
 
                 logger.info("Recived HMAC: <"+hMacString+">");
+				logger.info("Recived Message: <"+message+">");
                 logger.info("Generated HMAC: <"+generatedHMACString+">");
                 logger.info("Validating HMACs: " + MessageDigest.isEqual(hMacString.getBytes(), generatedHMAC));
 
@@ -104,21 +106,28 @@ public class PrivateMessageReceiver implements Runnable {
 
                 String response;
                 if(MessageDigest.isEqual(hMacString.getBytes(), generatedHMAC)){        //Valid
-                    logger.fine("Sending !ack...");
+                    logger.info("Sending !ack...");
                     response = "!ack";
                 }else{                  //Tampered
-                    logger.fine("Message was tampered!");
-                    logger.fine("Sender will be informed about this incident");
+                    logger.info("Message was tampered!");
+                    logger.info("Sender will be informed about this incident");
                     System.out.println(message);
                     response = "!tampered " + message;
                 }
+				
+				String responseHMAC = new String(HMAC.generateHMAC(response, sharedSecret));
+                logger.info(responseHMAC + " " + response);
+				out.println(responseHMAC + " " + response);
 
-                out.println(HMAC.generateHMAC(response, sharedSecret) + " " + response);
                 out.flush();
-
+			/*	try{
+					Thread.currentThread().sleep(1000);
+				}catch(InterruptedException e){
+					logger.warning("Unable to wait one second!");
+				}*/
             } catch (IOException ex) {
                 logger.warning("Error while handling client: " + ex.getMessage());
-            } finally {
+            } /*finally {
                 try {
                     this.socket.shutdownInput();
                 } catch (IOException e) {
@@ -134,7 +143,7 @@ public class PrivateMessageReceiver implements Runnable {
                 } catch (IOException e) {
                     logger.warning("Failed to close socket: " + e.getMessage());
                 }
-            }
+            }*/
         }
     }
 }

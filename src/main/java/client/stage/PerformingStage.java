@@ -28,6 +28,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.net.Socket;
+import util.LineReader;
+import util.SimpleSocketCommunicationChannel;
 
 public class PerformingStage implements Stage {
     private static final Logger logger = Logger.getLogger("PerformingStage");
@@ -301,19 +304,38 @@ public class PerformingStage implements Stage {
             String hmac = new String(HMAC.generateHMAC(finalMessage, sharedSecret));
 
             // open socket for client connection
-            ConnectionManager manager = new ConnectionManager(addr.getHostName(), port);
-            manager.getConnection().writeLine(hmac + " " + finalMessage);
+            //ConnectionManager manager = new ConnectionManager(addr.getHostName(), port);
+            //manager.getConnection().writeLine(hmac + " " + finalMessage);
+		
+			try{
+			Socket socket = new Socket(addr.getHostName(), port);
+			CommunicationChannel channel = new SimpleSocketCommunicationChannel(socket);
 
-            logger.info("Sending Private Message: " + hmac + " " + finalMessage);
-            String response = manager.getConnection().readLine();
-            manager.shutdown();
+			PrintWriter writer = new PrintWriter(channel.getOutputStream());
+			LineReader reader = new LineReader(channel.getInputStream());
+			
+			writer.println(hmac + " " + finalMessage);
+			writer.flush();
 
+	        logger.info("Sending Private Message: " + hmac + " " + finalMessage);
+            String response = reader.readLine();
+
+			logger.info("Raw Response: <"+response+">");
             String responseHMACString = response.substring(0, response.indexOf(' '));
             String responseMessageString = response.substring(response.indexOf(' ') + 1);
 
-            byte[] generatedResponseHMAC = HMAC.generateHMAC(responseMessageString, sharedSecret);
+            logger.info("Response Message <"+responseMessageString+">");
+			logger.info("Response HMAC <"+responseHMACString+">");
 
-            if (!MessageDigest.isEqual(generatedResponseHMAC, responseHMACString.getBytes())) {
+			byte[] generatedResponseHMAC = HMAC.generateHMAC(responseMessageString, sharedSecret);
+		
+			String genHMAC = new String(generatedResponseHMAC);
+			logger.info("Generated HMAC <"+genHMAC+">");
+            
+
+			socket.close();
+
+			if (!MessageDigest.isEqual(genHMAC.getBytes(), responseHMACString.getBytes())) {
                 System.out.println("Received Message was tampered!");
                 logger.info("Received Message was tampered!");
                 return "Received Message was tampered!";
@@ -324,8 +346,15 @@ public class PerformingStage implements Stage {
                     return "Your message was tampered!";
                 }
             }
+            
+			return MSG_SUCCESS.replace("%USERNAME%", username).replace("%RESPONSE%", response);
 
-            return MSG_SUCCESS.replace("%USERNAME%", username).replace("%RESPONSE%", response);
+			}catch(IOException e){
+				logger.info("Unable to close socket!");
+			}
+            
+
+            return "Message Failed";
         }
 
         @Command
