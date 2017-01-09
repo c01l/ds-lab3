@@ -3,6 +3,7 @@ package nameserver;
 import nameserver.exceptions.AlreadyRegisteredException;
 import nameserver.exceptions.InvalidDomainException;
 
+import java.io.PrintStream;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Map;
@@ -14,11 +15,18 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
 
     private ConcurrentHashMap<String, INameserver> nameserverHashMap;
     private ConcurrentHashMap<String, String> registeredUserHashMap;
+    private PrintStream userResponseStream;
 
     public RMINameserverObject() throws RemoteException{
         super();
         this.nameserverHashMap = new ConcurrentHashMap<>();
         this.registeredUserHashMap = new ConcurrentHashMap<>();
+    }
+    public RMINameserverObject(PrintStream outputStream) throws RemoteException{
+        super();
+        this.nameserverHashMap = new ConcurrentHashMap<>();
+        this.registeredUserHashMap = new ConcurrentHashMap<>();
+        this.userResponseStream = outputStream;
     }
 
     /*
@@ -70,10 +78,13 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
      */
     @Override
     public void registerUser(String username, String address) throws RemoteException, AlreadyRegisteredException, InvalidDomainException {
+        this.userResponseStream.println("Registering address '" + address + "' for user '" + username +"'");
         int index = username.lastIndexOf('.');
         if (index < 0) {
             if(this.registeredUserHashMap.containsKey(username)) {
-                throw new AlreadyRegisteredException("The user <" + username + "> is already registered!");
+                String message = "The user <" + username + "> is already registered!";
+                this.userResponseStream.println(message);
+                throw new AlreadyRegisteredException(message);
             }
             this.registeredUserHashMap.put(username, address);
         } else {
@@ -85,22 +96,27 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
                 childNs.registerUser(rest, address);
             }
             else {
-                throw new InvalidDomainException("The Nameserver <" + next +"> is unknown!" );
+                String message = "The Nameserver <" + next +"> is unknown!";
+                this.userResponseStream.println(message);
+                throw new InvalidDomainException(message);
             }
         }
     }
 
     @Override
     public INameserverForChatserver getNameserver(String zone) throws RemoteException {
+        this.userResponseStream.println("Nameserver for ’" + zone  +"’ requested by chatserver");
         if(this.nameserverHashMap.containsKey(zone)) {
             return this.nameserverHashMap.get(zone);
         } else {
+            this.userResponseStream.println("The zone '" + zone + "is not registered.");
             return null;
         }
     }
 
     @Override
     public String lookup(String username) throws RemoteException {
+        this.userResponseStream.println("Address for '" + username + "' requested by chatserver");
         if(this.registeredUserHashMap.containsKey(username))
             return this.registeredUserHashMap.get(username);
         else
@@ -109,10 +125,13 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
 
     @Override
     public synchronized void registerNameserver(final String domain, final INameserver nameserver, final INameserverForChatserver nameserverForChatserver) throws RemoteException, AlreadyRegisteredException, InvalidDomainException {
+        this.userResponseStream.println("Registering nameserver for zone ’" + domain + "'");
         int index = domain.lastIndexOf('.');
         if (index < 0) {
             if(this.nameserverHashMap.containsKey(domain)) {
-                throw new AlreadyRegisteredException("The nameserver <" + domain + "> is already registered!");
+                String message = "The nameserver <" + domain + "> is already registered!";
+                this.userResponseStream.println(message);
+                throw new AlreadyRegisteredException(message);
             }
             this.nameserverHashMap.put(domain, nameserver);
         } else {
@@ -124,7 +143,9 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
                 childNs.registerNameserver(rest, nameserver, nameserverForChatserver);
             }
             else {
-                throw new InvalidDomainException("The Nameserver <" + next +"> is unknown!" );
+                String message = "The Nameserver <" + next +"> is unknown!";
+                this.userResponseStream.println(message);
+                throw new InvalidDomainException(message);
             }
         }
     }

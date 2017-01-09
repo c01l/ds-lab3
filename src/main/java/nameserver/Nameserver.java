@@ -56,7 +56,7 @@ public class Nameserver implements INameserverCli, Runnable {
 
 
         try {
-            this.RMIObject = new RMINameserverObject();
+            this.RMIObject = new RMINameserverObject(this.userResponseStream);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
