@@ -86,13 +86,13 @@ public class Nameserver implements INameserverCli, Runnable {
                 INameserver root = (INameserver) registry.lookup(this.rootId);
                 root.registerNameserver(this.domain, this.RMIObject, this.RMIObject);
             } catch (NotBoundException e) {
-                e.printStackTrace();
+                this.userResponseStream.println(e.getMessage());
             } catch (RemoteException e) {
-                e.printStackTrace();
+                this.userResponseStream.println(e.getMessage());
             } catch (InvalidDomainException e) {
-                e.printStackTrace();
+                this.userResponseStream.println("Domain '" + this.domain + "' is not valid ("+e.getMessage() + ")");
             } catch (AlreadyRegisteredException e) {
-                e.printStackTrace();
+                this.userResponseStream.println("Nameserver '" + this.domain + "' is already registered!");
             }
         }
         // start main loop to handle user input
