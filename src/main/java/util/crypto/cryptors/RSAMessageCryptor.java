@@ -1,15 +1,12 @@
 package util.crypto.cryptors;
 
 import org.bouncycastle.util.encoders.Base64;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 import util.crypto.BrokenMessageException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
@@ -51,7 +48,7 @@ public class RSAMessageCryptor implements MessageCryptor {
             logger.info("Encrypted to: " + encoded);
 
             return encoded;
-        }catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
             throw new BrokenMessageException(e);
         }
     }

@@ -1,8 +1,11 @@
 package client;
 
 import util.HMAC;
+import util.LineReader;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.Key;
@@ -11,7 +14,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import util.LineReader;
 
 public class PrivateMessageReceiver implements Runnable {
 
@@ -60,7 +62,7 @@ public class PrivateMessageReceiver implements Runnable {
     public void shutdown() {
         try {
             this.socket.close();
-        } catch(IOException e) {
+        } catch (IOException e) {
             logger.warning("Failed to close socket: " + e.getMessage());
         }
 
@@ -87,9 +89,9 @@ public class PrivateMessageReceiver implements Runnable {
 
                 String message, hMacString;
 
-				if(line.indexOf(' ') == -1){
-					logger.info("The received message was not in the correct format!");
-				}
+                if (line.indexOf(' ') == -1) {
+                    logger.info("The received message was not in the correct format!");
+                }
 
                 hMacString = line.substring(0, line.indexOf(' '));
                 message = line.substring(line.indexOf(' ') + 1);
@@ -97,18 +99,18 @@ public class PrivateMessageReceiver implements Runnable {
                 byte[] generatedHMAC = HMAC.generateHMAC(message, sharedSecret);
 
                 String generatedHMACString = new String(generatedHMAC);
-                logger.info("Received HMAC: <"+hMacString+">");
-				logger.info("Received Message: <"+message+">");
-                logger.info("Generated HMAC: <"+generatedHMACString+">");
+                logger.info("Received HMAC: <" + hMacString + ">");
+                logger.info("Received Message: <" + message + ">");
+                logger.info("Generated HMAC: <" + generatedHMACString + ">");
 
                 // write line to output stream
                 userOutputStream.println(message);
 
                 String response;
-                if(MessageDigest.isEqual(hMacString.getBytes(), generatedHMAC)){        //Valid
+                if (MessageDigest.isEqual(hMacString.getBytes(), generatedHMAC)) {        //Valid
                     logger.info("Sending !ack...");
                     response = "!ack";
-                }else{                  //Tampered
+                } else {                  //Tampered
                     logger.info("Received Message was tampered, HMAC is invalid!");
                     logger.info("The Sender will be informed about this incident");
 
@@ -116,11 +118,11 @@ public class PrivateMessageReceiver implements Runnable {
 
                     response = "!tampered " + message;
                 }
-				
-				String responseHMAC = new String(HMAC.generateHMAC(response, sharedSecret));
 
-                logger.info("Sending Response: <" + responseHMAC + " " + response+">");
-				out.println(responseHMAC + " " + response);
+                String responseHMAC = new String(HMAC.generateHMAC(response, sharedSecret));
+
+                logger.info("Sending Response: <" + responseHMAC + " " + response + ">");
+                out.println(responseHMAC + " " + response);
 
                 out.flush();
             } catch (IOException ex) {

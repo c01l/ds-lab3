@@ -13,15 +13,15 @@ public class LineReader {
         this.source = source;
     }
 
-    public String readLine() throws IOException{
+    public String readLine() throws IOException {
         StringBuilder builder = new StringBuilder();
 
-        for(;;){
+        for (; ; ) {
             int c = this.source.read();
-		    if(c == 10 || c == 0) {
+            if (c == 10 || c == 0) {
                 return builder.toString();
-            } else if(c == -1) {
-                if(builder.length() == 0) {
+            } else if (c == -1) {
+                if (builder.length() == 0) {
                     return null;
                 } else {
                     return builder.toString();

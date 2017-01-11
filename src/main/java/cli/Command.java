@@ -12,11 +12,11 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Command {
-	/**
-	 * Returns the name of the command.<br/>
-	 * If the value is not specified, the method name is used instead.
-	 *
-	 * @return the command name
-	 */
-	String value() default "";
+    /**
+     * Returns the name of the command.<br/>
+     * If the value is not specified, the method name is used instead.
+     *
+     * @return the command name
+     */
+    String value() default "";
 }

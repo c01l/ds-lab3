@@ -9,6 +9,7 @@ public interface MessageCryptor {
 
     /**
      * Encrypts the message given to it.
+     *
      * @param msg the message to be encrypted (plaintext)
      * @return the encrypted message
      */
@@ -16,6 +17,7 @@ public interface MessageCryptor {
 
     /**
      * Decrypts the message given to it.
+     *
      * @param msg the encrypted message (ciphertext)
      * @return the original message (plaintext)
      */

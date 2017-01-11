@@ -19,7 +19,7 @@ public class PerformingStage implements ClientStage {
 
     public PerformingStage(List<UserData> userDataList, INameserverForChatserver nameserver) {
         this.userDataList = userDataList;
-	this.nameserver = nameserver;
+        this.nameserver = nameserver;
     }
 
     @Override

@@ -9,7 +9,8 @@ import util.crypto.CryptoChannel;
 import util.crypto.cryptors.AESMessageCryptor;
 import util.crypto.cryptors.RSAMessageCryptor;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.SecureRandom;
@@ -67,7 +68,7 @@ public class ClientHandshakePerformer implements HandshakePerformer {
 
             // read sent challenge and check
             byte[] msg2_clientChallenge = Base64.decode(msg2Split[1]);
-            if(!compareArrays(clientChallenge, msg2_clientChallenge)) {
+            if (!compareArrays(clientChallenge, msg2_clientChallenge)) {
                 throw new HandshakeFailedException("Server sent invalid challenge");
             }
 
@@ -98,16 +99,16 @@ public class ClientHandshakePerformer implements HandshakePerformer {
     }
 
     private static boolean compareArrays(byte[] a1, byte[] a2) {
-        if(a1 == a2) {
+        if (a1 == a2) {
             return true;
         }
 
-        if(a1.length != a2.length) {
+        if (a1.length != a2.length) {
             return false;
         }
 
-        for(int i = 0; i < a1.length; ++i) {
-            if(a1[i] != a2[i]) {
+        for (int i = 0; i < a1.length; ++i) {
+            if (a1[i] != a2[i]) {
                 return false;
             }
         }

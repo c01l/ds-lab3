@@ -1,29 +1,17 @@
 package client;
 
-import chatserver.Chatserver;
-import cli.Command;
-import cli.Shell;
-import client.stage.LoginStage;
 import client.stage.Stage;
 import client.stage.StageGenerator;
 import util.Config;
 import util.Keys;
-import util.LineStreamSplitter;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.security.Key;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 public class Client implements Runnable {
 
@@ -73,7 +61,7 @@ public class Client implements Runnable {
         StageGenerator generator = new StageGenerator(this.userRequestStream, this.userResponseStream, serverHostname, serverPort, serverUdpPort, serverKey, clientKeyDir, hmacPath);
 
         Stage stage = generator.generateLoginStage();
-        while(stage != null) {
+        while (stage != null) {
             logger.info("Starting stage: " + stage.toString());
             stage = stage.execute();
             logger.info("Stage finished");
@@ -86,7 +74,7 @@ public class Client implements Runnable {
      * @param args the first argument is the name of the {@link Client} component
      */
     public static void main(String[] args) {
-		LogManager.getLogManager().reset();
+        LogManager.getLogManager().reset();
         Client client = new Client(args[0], new Config("client"), System.in,
                 System.out);
         client.run();

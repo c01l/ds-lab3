@@ -1,25 +1,27 @@
 package chatserver;
 
+import chatserver.Chatserver.Marker;
 import cli.Command;
 import cli.SilentShell;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.rmi.RemoteException;
-import java.util.List;
-import java.util.logging.Logger;
-import java.util.logging.Level;
-
-import chatserver.Chatserver.Marker;
 import nameserver.INameserverForChatserver;
 import nameserver.exceptions.AlreadyRegisteredException;
 import nameserver.exceptions.InvalidDomainException;
 import util.CommunicationChannel;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.rmi.RemoteException;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class ChatserverClientHandler extends SilentShell implements IServerClientHandler {
 
     private static final Logger LOGGER = Logger.getLogger("CharserverClientHandler");
-    static { LOGGER.setLevel(Level.WARNING); }
+
+    static {
+        LOGGER.setLevel(Level.WARNING);
+    }
 
     private static final String MSG_RESPONSE_LOGIN_SUCCESSFUL = "Successfully logged in.";
     private static final String MSG_RESPONSE_LOGIN_FAILED = "Wrong username or password!";
@@ -162,8 +164,8 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
             String message = "The user <" + d.getName() + "> is already registered!";
             System.out.println(message);
             return Marker.MARKER_REGISTER_RESPONSE + message;
-        } catch (InvalidDomainException e){
-            String message = "The domain <" + d.getName() +"> is not valid! Probably the responsible nameserver is offline.";
+        } catch (InvalidDomainException e) {
+            String message = "The domain <" + d.getName() + "> is not valid! Probably the responsible nameserver is offline.";
             System.out.println(message);
             return Marker.MARKER_REGISTER_RESPONSE + message;
         }
@@ -173,7 +175,7 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
     @Override
     public String lookup(String username) {
         UserData own = this.user;
-        if(own==null || !own.isOnline()) {
+        if (own == null || !own.isOnline()) {
             return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_NOTLOGGEDIN;
         }
 
@@ -181,11 +183,11 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
         INameserverForChatserver nameserver = this.rootNameserver;
 
         try {
-            for(int index = zones.length - 1; index > 0; index--) {
+            for (int index = zones.length - 1; index > 0; index--) {
                 nameserver = nameserver.getNameserver(zones[index]);
             }
             String localAddr = nameserver.lookup(zones[0]);
-            if(localAddr != null) {
+            if (localAddr != null) {
                 return Marker.MARKER_LOOKUP_RESPONSE + localAddr;
             } else {
                 return Marker.MARKER_LOOKUP_RESPONSE + MSG_RESPONSE_LOOKUP_FAILED + "(" + username + "is not registered on this server)";

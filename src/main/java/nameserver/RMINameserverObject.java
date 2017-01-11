@@ -12,19 +12,19 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-
 public class RMINameserverObject extends UnicastRemoteObject implements INameserver {
 
     private ConcurrentHashMap<String, INameserver> nameserverHashMap;
     private ConcurrentHashMap<String, String> registeredUserHashMap;
     private PrintStream userResponseStream;
 
-    public RMINameserverObject() throws RemoteException{
+    public RMINameserverObject() throws RemoteException {
         super();
         this.nameserverHashMap = new ConcurrentHashMap<>();
         this.registeredUserHashMap = new ConcurrentHashMap<>();
     }
-    public RMINameserverObject(PrintStream outputStream) throws RemoteException{
+
+    public RMINameserverObject(PrintStream outputStream) throws RemoteException {
         super();
         this.nameserverHashMap = new ConcurrentHashMap<>();
         this.registeredUserHashMap = new ConcurrentHashMap<>();
@@ -42,12 +42,13 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
         int counter = 1;
         for (Map.Entry<String, INameserver> ns : this.nameserverHashMap.entrySet()) {
             sb.append(counter++)
-              .append("\t")
-              .append(ns.getKey())
-              .append("\n");
+                    .append("\t")
+                    .append(ns.getKey())
+                    .append("\n");
         }
         return sb.toString();
     }
+
     /*
     returns the addresses of users registered here
      */
@@ -81,10 +82,10 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
      */
     @Override
     public synchronized void registerUser(String username, String address) throws RemoteException, AlreadyRegisteredException, InvalidDomainException {
-        this.userResponseStream.println("Registering address '" + address + "' for user '" + username +"'");
+        this.userResponseStream.println("Registering address '" + address + "' for user '" + username + "'");
         int index = username.lastIndexOf('.');
         if (index < 0) {
-            if(this.registeredUserHashMap.containsKey(username)) {
+            if (this.registeredUserHashMap.containsKey(username)) {
                 String message = "The user <" + username + "> is already registered!";
                 this.userResponseStream.println(message);
                 throw new AlreadyRegisteredException(message);
@@ -94,12 +95,11 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
             String next = username.substring(index + 1);
             String rest = username.substring(0, index);
 
-            if(this.nameserverHashMap.containsKey(next)) {
+            if (this.nameserverHashMap.containsKey(next)) {
                 INameserver childNs = this.nameserverHashMap.get(next);
                 childNs.registerUser(rest, address);
-            }
-            else {
-                String message = "The Nameserver <" + next +"> is unknown!";
+            } else {
+                String message = "The Nameserver <" + next + "> is unknown!";
                 this.userResponseStream.println(message);
                 throw new InvalidDomainException(message);
             }
@@ -108,8 +108,8 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
 
     @Override
     public synchronized INameserverForChatserver getNameserver(String zone) throws RemoteException {
-        this.userResponseStream.println("Nameserver for ’" + zone  +"’ requested by chatserver");
-        if(this.nameserverHashMap.containsKey(zone)) {
+        this.userResponseStream.println("Nameserver for ’" + zone + "’ requested by chatserver");
+        if (this.nameserverHashMap.containsKey(zone)) {
             return this.nameserverHashMap.get(zone);
         } else {
             this.userResponseStream.println("The zone '" + zone + "is not registered.");
@@ -120,7 +120,7 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
     @Override
     public synchronized String lookup(String username) throws RemoteException {
         this.userResponseStream.println("Address for '" + username + "' requested by chatserver");
-        if(this.registeredUserHashMap.containsKey(username))
+        if (this.registeredUserHashMap.containsKey(username))
             return this.registeredUserHashMap.get(username);
         else
             return null;
@@ -131,7 +131,7 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
         this.userResponseStream.println("Registering nameserver for zone ’" + domain + "'");
         int index = domain.lastIndexOf('.');
         if (index < 0) {
-            if(this.nameserverHashMap.containsKey(domain)) {
+            if (this.nameserverHashMap.containsKey(domain)) {
                 String message = "The nameserver <" + domain + "> is already registered!";
                 this.userResponseStream.println(message);
                 throw new AlreadyRegisteredException(message);
@@ -141,12 +141,11 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
             String next = domain.substring(index + 1);
             String rest = domain.substring(0, index);
 
-            if(this.nameserverHashMap.containsKey(next)) {
+            if (this.nameserverHashMap.containsKey(next)) {
                 INameserver childNs = this.nameserverHashMap.get(next);
                 childNs.registerNameserver(rest, nameserver, nameserverForChatserver);
-            }
-            else {
-                String message = "The Nameserver <" + next +"> is unknown!";
+            } else {
+                String message = "The Nameserver <" + next + "> is unknown!";
                 this.userResponseStream.println(message);
                 throw new InvalidDomainException(message);
             }

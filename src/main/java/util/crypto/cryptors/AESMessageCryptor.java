@@ -1,8 +1,6 @@
 package util.crypto.cryptors;
 
 import org.bouncycastle.util.encoders.Base64;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 import util.crypto.BrokenMessageException;
 
 import javax.crypto.BadPaddingException;
@@ -11,7 +9,6 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;

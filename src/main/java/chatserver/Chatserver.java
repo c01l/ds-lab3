@@ -1,19 +1,5 @@
 package chatserver;
 
-import java.io.*;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.Socket;
-import java.security.Key;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.LogManager;
-
-
 import chatserver.stage.LoginStage;
 import chatserver.stage.PerformingStage;
 import cli.Command;
@@ -23,6 +9,25 @@ import util.CommunicationChannel;
 import util.Config;
 import util.Keys;
 import util.SimpleSocketCommunicationChannel;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.Socket;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.security.Key;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 public class Chatserver implements IChatserverCli, Runnable {
 
@@ -232,7 +237,7 @@ public class Chatserver implements IChatserverCli, Runnable {
      *             component
      */
     public static void main(String[] args) {
-		LogManager.getLogManager().reset();
+        LogManager.getLogManager().reset();
         Chatserver chatserver = new Chatserver(args[0],
                 new Config("chatserver"), System.in, System.out);
         chatserver.run();

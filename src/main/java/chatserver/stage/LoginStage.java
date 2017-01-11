@@ -5,7 +5,6 @@ import chatserver.TerminateSessionException;
 import chatserver.UserData;
 import util.CommunicationChannel;
 import util.HandshakeFailedException;
-import util.HandshakePerformer;
 
 import java.security.Key;
 import java.util.List;

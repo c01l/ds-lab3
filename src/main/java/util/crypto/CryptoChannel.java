@@ -39,7 +39,7 @@ public class CryptoChannel implements CommunicationChannel, Decorated<Communicat
                         logger.fine("Blocking...");
                         String line = stream.readLine();
 
-                        if(line == null) {
+                        if (line == null) {
                             return -1; // stream is dead!
                         }
 

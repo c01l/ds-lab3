@@ -33,7 +33,7 @@ public class SilentShell extends Shell {
                     t.printStackTrace(new PrintStream(str, true));
                     result = str.toString();
                 }
-                if(result != null) {
+                if (result != null) {
                     print(result);
                 }
             }

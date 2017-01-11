@@ -28,7 +28,7 @@ public class SimpleSocketCommunicationChannel implements CommunicationChannel {
 
     @Override
     public void close() throws IOException {
-        logger.info("Closing socket! (socket: " + this.socket +")");
+        logger.info("Closing socket! (socket: " + this.socket + ")");
         this.socket.close();
     }
 }

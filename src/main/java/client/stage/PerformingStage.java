@@ -4,33 +4,17 @@ import chatserver.Chatserver;
 import cli.Command;
 import cli.SilentShell;
 import client.ConnectionCapsule;
-import client.ConnectionManager;
-import client.IClientCli;
 import client.PrivateMessageReceiver;
-import org.bouncycastle.util.encoders.Base64;
-import util.CommunicationChannel;
-import util.HMAC;
-import util.Keys;
-import util.LineStreamSplitter;
+import util.*;
 
-import javax.crypto.Mac;
 import java.io.*;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.security.InvalidKeyException;
+import java.net.*;
 import java.security.Key;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.sql.Connection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.net.Socket;
-import util.LineReader;
-import util.SimpleSocketCommunicationChannel;
 
 public class PerformingStage implements Stage {
     private static final Logger logger = Logger.getLogger("PerformingStage");
@@ -304,55 +288,55 @@ public class PerformingStage implements Stage {
             String hmac = new String(HMAC.generateHMAC(finalMessage, sharedSecret));
 
             // open socket for client connection
-			try{
-					Socket socket = new Socket(addr.getHostName(), port);
-					CommunicationChannel channel = new SimpleSocketCommunicationChannel(socket);
+            try {
+                Socket socket = new Socket(addr.getHostName(), port);
+                CommunicationChannel channel = new SimpleSocketCommunicationChannel(socket);
 
-					PrintWriter writer = new PrintWriter(channel.getOutputStream());
-					LineReader reader = new LineReader(channel.getInputStream());
-					
-					writer.println(hmac + " " + finalMessage);
-					writer.flush();
-					logger.info("Sent Private Message: <" + hmac + " " + finalMessage + ">");
+                PrintWriter writer = new PrintWriter(channel.getOutputStream());
+                LineReader reader = new LineReader(channel.getInputStream());
+
+                writer.println(hmac + " " + finalMessage);
+                writer.flush();
+                logger.info("Sent Private Message: <" + hmac + " " + finalMessage + ">");
 
 
-					String response = reader.readLine();
-					logger.info("Raw Response: <"+response+">");
+                String response = reader.readLine();
+                logger.info("Raw Response: <" + response + ">");
 
-					if(response.indexOf(' ') == -1){
-						logger.info("The received response was in a wrong format!");
-						return "Interpreting response failed!";
-					}
+                if (response.indexOf(' ') == -1) {
+                    logger.info("The received response was in a wrong format!");
+                    return "Interpreting response failed!";
+                }
 
-					String responseHMACString = response.substring(0, response.indexOf(' '));
-					String responseMessageString = response.substring(response.indexOf(' ') + 1);
+                String responseHMACString = response.substring(0, response.indexOf(' '));
+                String responseMessageString = response.substring(response.indexOf(' ') + 1);
 
-					logger.info("Response Message <"+responseMessageString+">");
-					logger.info("Response HMAC <"+responseHMACString+">");
+                logger.info("Response Message <" + responseMessageString + ">");
+                logger.info("Response HMAC <" + responseHMACString + ">");
 
-					byte[] generatedResponseHMAC = HMAC.generateHMAC(responseMessageString, sharedSecret);
-				
-					String genHMAC = new String(generatedResponseHMAC);
-					logger.info("Generated HMAC <"+genHMAC+">");
-				
-					socket.close();
-					if (!MessageDigest.isEqual(generatedResponseHMAC, responseHMACString.getBytes())) {
-						System.out.println("Received response was tampered!");
-						logger.info("Received response was tampered!");
-						return "Received response was tampered!";
-					} else {
-						if (responseMessageString.startsWith("!tampered")) {
-							System.out.println("Your private message was tampered!");
-							logger.info("Your private message was tampered!");
-							return "Your private message was tampered!";
-						}
-					}
-					
-					return MSG_SUCCESS.replace("%USERNAME%", username).replace("%RESPONSE%", responseMessageString);
-			}catch(IOException e){
-				logger.info("Unable to close socket!");
-			}
-            
+                byte[] generatedResponseHMAC = HMAC.generateHMAC(responseMessageString, sharedSecret);
+
+                String genHMAC = new String(generatedResponseHMAC);
+                logger.info("Generated HMAC <" + genHMAC + ">");
+
+                socket.close();
+                if (!MessageDigest.isEqual(generatedResponseHMAC, responseHMACString.getBytes())) {
+                    System.out.println("Received response was tampered!");
+                    logger.info("Received response was tampered!");
+                    return "Received response was tampered!";
+                } else {
+                    if (responseMessageString.startsWith("!tampered")) {
+                        System.out.println("Your private message was tampered!");
+                        logger.info("Your private message was tampered!");
+                        return "Your private message was tampered!";
+                    }
+                }
+
+                return MSG_SUCCESS.replace("%USERNAME%", username).replace("%RESPONSE%", responseMessageString);
+            } catch (IOException e) {
+                logger.info("Unable to close socket!");
+            }
+
             return "Private Message Failed";
         }
 
@@ -409,7 +393,7 @@ public class PerformingStage implements Stage {
 
             logger.info("Register process has returned: " + response);
 
-            if(response.contains("already registered") || response.contains("nameserver is offline")) {
+            if (response.contains("already registered") || response.contains("nameserver is offline")) {
                 return response;
             }
 

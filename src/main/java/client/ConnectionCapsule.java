@@ -3,11 +3,10 @@ package client;
 import util.CommunicationChannel;
 import util.LineReader;
 import util.LineStreamSplitter;
-import util.SimpleSocketCommunicationChannel;
 
-import java.io.*;
-import java.net.Socket;
-import java.util.logging.ConsoleHandler;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,6 +15,7 @@ import java.util.logging.Logger;
  */
 public class ConnectionCapsule implements Closeable {
     private static final Logger LOGGER = Logger.getLogger("ConnectionCapsule");
+
     static {
         LOGGER.setLevel(Level.WARNING);
     }
@@ -59,7 +59,7 @@ public class ConnectionCapsule implements Closeable {
             LOGGER.fine("Closing output...");
             this.channel.close();
             LOGGER.fine("Output closed!");
-        }catch (IOException e) {
+        } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to close socket!");
             e.printStackTrace();
         }

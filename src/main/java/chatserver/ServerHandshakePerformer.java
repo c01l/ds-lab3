@@ -8,7 +8,9 @@ import util.crypto.cryptors.RSAMessageCryptor;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
@@ -51,7 +53,7 @@ public class ServerHandshakePerformer implements HandshakePerformer {
             String msg1 = reader.readLine();
             logger.info("Client sent (message 1): " + msg1);
 
-            if(msg1 == null) {
+            if (msg1 == null) {
                 throw new HandshakeFailedException("Client sent empty message");
             }
 
@@ -77,7 +79,7 @@ public class ServerHandshakePerformer implements HandshakePerformer {
 
             // use users public key to respond
             File keyFile = getPublicKeyFileForUser(username);
-            if(keyFile == null) {
+            if (keyFile == null) {
                 logger.info("Cannot find user public key!");
                 throw new HandshakeFailedException("Cannot find user public key");
             }
@@ -124,7 +126,7 @@ public class ServerHandshakePerformer implements HandshakePerformer {
             // read server challenge from the new channel
             LineReader aesReader = new LineReader(aesChannel.getInputStream());
             String serverChallengeResponse = aesReader.readLine();
-            if(serverChallengeResponse == null || !serverChallengeEncodedB64.equals(serverChallengeResponse)) {
+            if (serverChallengeResponse == null || !serverChallengeEncodedB64.equals(serverChallengeResponse)) {
                 throw new HandshakeFailedException("Server Challenge was not returned correctly. (Got: " + serverChallengeResponse + ")");
             }
 

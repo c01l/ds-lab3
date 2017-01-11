@@ -1,6 +1,5 @@
 package util;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,7 +75,7 @@ public class LineStreamSplitter implements Runnable {
     public String readLine(String prefix, boolean removePrefix) {
         for (Queue<String> lines; !Thread.currentThread().isInterrupted() && !stopped; ) {
             lines = this.storage.get(prefix);
-            if(lines == null) {
+            if (lines == null) {
                 throw new IllegalArgumentException("Prefix queue does not exist!");
             }
 
@@ -123,7 +122,7 @@ public class LineStreamSplitter implements Runnable {
 
         // inform all readers that we are done
         this.stopped = true;
-        for(Queue<String> l : this.storage.values()) {
+        for (Queue<String> l : this.storage.values()) {
             synchronized (l) {
                 l.notifyAll();
             }
@@ -140,7 +139,7 @@ public class LineStreamSplitter implements Runnable {
     }
 
     public void ensureQueue(String prefix) {
-        if(!this.storage.containsKey(prefix)) {
+        if (!this.storage.containsKey(prefix)) {
             this.registerPrefix(prefix);
         }
     }
