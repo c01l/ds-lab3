@@ -399,14 +399,6 @@ public class PerformingStage implements Stage {
                 return "Port has to be a number";
             }
 
-            // try to open socket before telling the server its open
-            try {
-                privateMsgReciever = new PrivateMessageReceiver(port, new PrintStream(userResponseStream), sharedSecret);
-                pool.execute(privateMsgReciever);
-            } catch (IOException e) {
-                return "Failed to open socket. Did not publish IP + Port to server.";
-            }
-
             final String marker = Chatserver.Marker.MARKER_REGISTER_RESPONSE;
 
             LineStreamSplitter splitter = capsule.getSplitter();
@@ -417,6 +409,17 @@ public class PerformingStage implements Stage {
 
             logger.info("Register process has returned: " + response);
 
+            if(response.contains("already registered") || response.contains("nameserver is offline")) {
+                return response;
+            }
+
+            // try to open socket before telling the server its open
+            try {
+                privateMsgReciever = new PrivateMessageReceiver(port, new PrintStream(userResponseStream), sharedSecret);
+                pool.execute(privateMsgReciever);
+            } catch (IOException e) {
+                return "Failed to open socket. Did not publish IP + Port to server.";
+            }
 
             return response;
         }
