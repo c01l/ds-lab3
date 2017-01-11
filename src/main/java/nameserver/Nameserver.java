@@ -71,14 +71,16 @@ public class Nameserver implements INameserverCli, Runnable {
             try {
                 this.registry = LocateRegistry.createRegistry(this.registryPort);
             } catch (RemoteException e) {
-                e.printStackTrace();
+                this.userResponseStream.println("Failed to create RMI Registry. Shutting down. Exception: " + e.getMessage());
+                return;
             }
 
             // bind itself to the registry
             try {
                 this.registry.rebind(this.rootId, this.RMIObject);
             } catch (RemoteException e) {
-                e.printStackTrace();
+                this.userResponseStream.println("Failed to bind root Nameserver to Registry. Shutting down. Exception: " + e.getMessage());
+                return;
             }
         } else {
             // register this nameserver
@@ -96,7 +98,7 @@ public class Nameserver implements INameserverCli, Runnable {
                 this.userResponseStream.println("Nameserver '" + this.domain + "' is already registered!");
             }
         }
-        // start main loop to handle user input
+
         shell = new Shell(componentName, this.userRequestStream, this.userResponseStream);
         shell.register(this);
         shell.run();
@@ -117,10 +119,10 @@ public class Nameserver implements INameserverCli, Runnable {
     @Override
     @Command("!exit")
     public String exit() throws IOException {
-        this.shell.close();
+        if(this.shell != null) this.shell.close();
         if (this.isRoot) {
             try {
-                this.registry.unbind(this.rootId);
+                if(this.registry != null) this.registry.unbind(this.rootId);
             } catch (NotBoundException e) {
                 e.printStackTrace();
             }

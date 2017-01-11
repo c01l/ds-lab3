@@ -7,6 +7,8 @@ import java.io.PrintStream;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -48,7 +50,6 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
     }
     /*
     returns the addresses of users registered here
-    TODO: sort users alphabetically
      */
     public String getAddresses() {
         if (this.registeredUserHashMap.isEmpty())
@@ -56,13 +57,15 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
 
         StringBuilder sb = new StringBuilder();
         int counter = 1;
-        for (Map.Entry<String, String> user : this.registeredUserHashMap.entrySet()) {
+        // sort keys
+        SortedSet<String> keys = new TreeSet<>(this.registeredUserHashMap.keySet());
+        for (String key : keys) {
             sb.append(counter++)
-              .append("\t")
-              .append(user.getKey())
-              .append("\t")
-              .append(user.getValue())
-              .append("\n");
+                    .append("\t")
+                    .append(key)
+                    .append("\t")
+                    .append(this.registeredUserHashMap.get(key))
+                    .append("\n");
         }
         return sb.toString();
     }
@@ -77,7 +80,7 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
         =>  @"vienna" nameserver: alice is stored in concurrent hashmap
      */
     @Override
-    public void registerUser(String username, String address) throws RemoteException, AlreadyRegisteredException, InvalidDomainException {
+    public synchronized void registerUser(String username, String address) throws RemoteException, AlreadyRegisteredException, InvalidDomainException {
         this.userResponseStream.println("Registering address '" + address + "' for user '" + username +"'");
         int index = username.lastIndexOf('.');
         if (index < 0) {
@@ -104,7 +107,7 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
     }
 
     @Override
-    public INameserverForChatserver getNameserver(String zone) throws RemoteException {
+    public synchronized INameserverForChatserver getNameserver(String zone) throws RemoteException {
         this.userResponseStream.println("Nameserver for ’" + zone  +"’ requested by chatserver");
         if(this.nameserverHashMap.containsKey(zone)) {
             return this.nameserverHashMap.get(zone);
@@ -115,7 +118,7 @@ public class RMINameserverObject extends UnicastRemoteObject implements INameser
     }
 
     @Override
-    public String lookup(String username) throws RemoteException {
+    public synchronized String lookup(String username) throws RemoteException {
         this.userResponseStream.println("Address for '" + username + "' requested by chatserver");
         if(this.registeredUserHashMap.containsKey(username))
             return this.registeredUserHashMap.get(username);

@@ -159,11 +159,13 @@ public class ChatserverClientHandler extends SilentShell implements IServerClien
             e.printStackTrace();
             return Marker.MARKER_REGISTER_RESPONSE + e.getMessage();
         } catch (AlreadyRegisteredException e) {
-            e.printStackTrace();
-            return Marker.MARKER_REGISTER_RESPONSE + "The user " + d.getName() + " is already registered.";
+            String message = "The user <" + d.getName() + "> is already registered!";
+            System.out.println(message);
+            return Marker.MARKER_REGISTER_RESPONSE + message;
         } catch (InvalidDomainException e){
-            e.printStackTrace();
-            return Marker.MARKER_REGISTER_RESPONSE + "The Domain is not valid.";
+            String message = "The domain <" + d.getName() +"> is not valid! Probably the responsible nameserver is offline.";
+            System.out.println(message);
+            return Marker.MARKER_REGISTER_RESPONSE + message;
         }
     }
 
